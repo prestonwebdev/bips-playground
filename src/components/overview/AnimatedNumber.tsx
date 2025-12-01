@@ -18,15 +18,15 @@ export function AnimatedNumber({
   value,
   format = 'compact',
   className = '',
-  duration = 1.5,
+  duration = 0.6,
 }: AnimatedNumberProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-50px' })
   const [hasAnimated, setHasAnimated] = useState(false)
 
-  // Spring animation for smooth counting
+  // Spring animation for smooth counting - faster and snappier
   const springValue = useSpring(0, {
-    stiffness: 100,
+    stiffness: 200,
     damping: 30,
     duration: duration * 1000,
   })
