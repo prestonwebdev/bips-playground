@@ -90,7 +90,7 @@ export default function DashboardV2() {
   // Default to current period based on today's date
   const [viewType, setViewType] = useState<'month' | 'quarter' | 'year'>('month')
   const [currentIndex, setCurrentIndex] = useState(() => getCurrentPeriodIndex('month'))
-  const [direction, setDirection] = useState<'left' | 'right'>('right')
+  const [, setDirection] = useState<'left' | 'right'>('right')
 
   // Get data for current view type
   const data = getFinancialDataByView(viewType)
@@ -158,7 +158,7 @@ export default function DashboardV2() {
   return (
     <div className="w-full max-w-[1800px] mx-auto">
       {/* Welcome Message */}
-      <div className="mb-[27px]">
+      <div className="mb-7">
         <h1 className="text-[36px] font-normal text-black font-['Poppins'] leading-[44px] tracking-[-0.72px] mb-1">
           {getGreeting()}, {userName}.
         </h1>
@@ -193,7 +193,7 @@ export default function DashboardV2() {
       </div>
 
       {/* Main Card */}
-      <Card className="bg-white rounded-[16px] border-[#f1f2f2] overflow-hidden shadow-[-83px_122px_41px_0px_rgba(0,0,0,0),-53px_78px_38px_0px_rgba(0,0,0,0),-30px_44px_32px_0px_rgba(0,0,0,0.01),-13px_20px_24px_0px_rgba(0,0,0,0.02),-3px_5px_13px_0px_rgba(0,0,0,0.02)]">
+      <Card className="bg-white rounded-[16px] border-[var(--color-neutral-g-100)] overflow-hidden shadow-[-83px_122px_41px_0px_rgba(0,0,0,0),-53px_78px_38px_0px_rgba(0,0,0,0),-30px_44px_32px_0px_rgba(0,0,0,0.01),-13px_20px_24px_0px_rgba(0,0,0,0.02),-3px_5px_13px_0px_rgba(0,0,0,0.02)]">
         {/* Header */}
         <div className="px-6 pt-8 pb-0">
           <div className="flex items-center justify-between">
@@ -201,7 +201,7 @@ export default function DashboardV2() {
               <p className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins'] leading-[20px] tracking-[-0.28px]">
                 Financial Overview
               </p>
-              <h2 className="text-[32px] font-normal text-black font-['Poppins'] leading-[43.6px] tracking-[-0.64px]">
+              <h2 className="text-[32px] font-normal text-black font-['Poppins'] leading-[44px] tracking-[-0.64px]">
                 {currentPeriod.periodLabel}
               </h2>
             </div>
@@ -539,17 +539,13 @@ interface ProfitBarChartProps {
   isCurrentPeriod?: boolean
 }
 
-function ProfitBarChart({ viewType, quarterNumber, monthNumber, isCurrentPeriod = false }: ProfitBarChartProps) {
+function ProfitBarChart({ viewType, quarterNumber, monthNumber }: ProfitBarChartProps) {
   // Use simulated date (Dec 9, 2025) for determining if a period has passed
   const currentMonth = SIMULATED_MONTH
   const currentDay = SIMULATED_DAY
 
   // Generate daily/weekly/monthly data based on view type
   const chartData = useMemo(() => {
-    const monthNameToIndex: Record<string, number> = {
-      'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-      'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
-    }
     const shortMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     if (viewType === 'month') {
@@ -562,7 +558,6 @@ function ProfitBarChart({ viewType, quarterNumber, monthNumber, isCurrentPeriod 
 
       // For current month, determine which day is "today"
       const isThisCurrentMonth = targetMonth === currentMonth
-      const todayDay = isThisCurrentMonth ? currentDay : null
 
       const days: Array<{ label: string; dateRange: string; profit: number; revenue: number; costs: number; isProfit: boolean; uniqueKey: string; isPast: boolean; isFuture: boolean; isToday: boolean; hasNoTransactions: boolean }> = []
 
@@ -802,7 +797,7 @@ function ProfitBarChart({ viewType, quarterNumber, monthNumber, isCurrentPeriod 
   const monthSeparators = useMemo(() => {
     if (viewType !== 'quarter') return []
     return chartData
-      .map((d, idx) => d.isMonthStart ? { idx, label: d.monthLabel || '' } : null)
+      .map((d, idx) => ('isMonthStart' in d && d.isMonthStart) ? { idx, label: ('monthLabel' in d ? d.monthLabel : '') || '' } : null)
       .filter((item): item is { idx: number; label: string } => item !== null)
   }, [chartData, viewType])
 
@@ -1128,7 +1123,7 @@ function ViewSelector({
                   align="end"
                   side="bottom"
                   sideOffset={8}
-                  className="w-[200px] p-2 bg-white border border-[#f1f2f2] rounded-xl shadow-lg"
+                  className="w-[200px] p-2 bg-white border border-[var(--color-neutral-g-100)] rounded-xl shadow-lg"
                 >
                   {periods.map((period) => (
                     <DropdownMenuItem
@@ -1136,8 +1131,8 @@ function ViewSelector({
                       className={`
                         px-3 py-2 rounded-lg cursor-pointer transition-colors text-[15px] font-['Poppins']
                         ${period.id === currentPeriod.id
-                          ? 'bg-[#fafafa] text-[#467c75] font-medium'
-                          : 'text-[var(--color-neutral-n-700)] hover:bg-[#fafafa]'
+                          ? 'bg-[var(--color-neutral-g-50)] text-[var(--color-primary-p-500)] font-medium'
+                          : 'text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)]'
                         }
                       `}
                       onClick={() => {
@@ -1157,7 +1152,7 @@ function ViewSelector({
             <button
               key={value}
               onClick={() => onViewChange?.(value)}
-              className="relative z-10 px-3 py-2 rounded-full text-[15px] font-['Poppins'] cursor-pointer transition-colors text-[var(--color-neutral-n-700)] hover:text-[#467c75] tracking-[-0.3px]"
+              className="relative z-10 px-3 py-2 rounded-full text-[15px] font-['Poppins'] cursor-pointer transition-colors text-[var(--color-neutral-n-700)] hover:text-[var(--color-primary-p-500)] tracking-[-0.3px]"
             >
               {label}
             </button>
@@ -1187,15 +1182,15 @@ function NavigationButton({
       whileHover={{ scale: disabled ? 1 : 1.05 }}
       whileTap={{ scale: disabled ? 1 : 0.95 }}
       className={`
-        w-[38px] h-[38px] rounded-full border border-[#e5e7e7] bg-white
+        w-[40px] h-[40px] rounded-full border border-[var(--color-neutral-g-200)] bg-white
         flex items-center justify-center transition-colors
         ${disabled
           ? 'opacity-40 cursor-not-allowed'
-          : 'hover:bg-[#fafafa] cursor-pointer'
+          : 'hover:bg-[var(--color-neutral-g-50)] cursor-pointer'
         }
       `}
     >
-      <Icon className={`w-5 h-5 ${disabled ? 'text-[#c1c5c5]' : 'text-[var(--color-neutral-n-700)]'}`} strokeWidth={2} />
+      <Icon className={`w-5 h-5 ${disabled ? 'text-[var(--color-neutral-g-400)]' : 'text-[var(--color-neutral-n-700)]'}`} strokeWidth={2} />
     </motion.button>
   )
 }

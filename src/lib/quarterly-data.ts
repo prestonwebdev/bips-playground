@@ -94,16 +94,6 @@ function generateDailyDataForMonth(
   return dataPoints
 }
 
-// Helper to generate weekly data points for a quarter
-function generateWeeklyData(
-  startMonth: number,
-  baseRevenue: number,
-  baseCosts: number,
-  baseCash: number
-): DailyDataPoint[] {
-  return generateWeeklyDataForQuarter(startMonth, 3, baseRevenue, baseCosts, baseCash)
-}
-
 // Helper to generate weekly data points for a quarter with variable months
 function generateWeeklyDataForQuarter(
   startMonth: number,

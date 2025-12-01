@@ -44,14 +44,14 @@ export function TransactionsTable({ initialTransactions }: TransactionsTableProp
   })
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null)
 
-  // Settings state
+  // Settings state - status column removed (all transactions are posted)
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
     date: true,
     merchant: true,
     account: true,
     category: true,
     amount: true,
-    status: true,
+    status: false,
   })
   const [categoryDisplayMode, setCategoryDisplayMode] = useState<CategoryDisplayMode>('emoji')
 

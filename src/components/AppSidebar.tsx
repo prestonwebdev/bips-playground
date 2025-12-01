@@ -132,7 +132,7 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
               <div className="relative bg-white border border-[var(--color-neutral-g-200)] rounded-[var(--radius-12)] h-[212px] overflow-hidden">
                 <div className="flex flex-col h-full">
                   <div className="bg-[var(--color-neutral-g-50)] flex-1" />
-                  <div className="px-3 py-[10px] pt-1">
+                  <div className="px-3 py-2 pt-1">
                     <p className="text-[14px] font-semibold text-[var(--color-neutral-n-800)] leading-[28px] tracking-[-0.28px] font-['Poppins']">
                       Company documents just launched!
                     </p>
@@ -142,7 +142,7 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
                   </div>
                   <button
                     onClick={() => setShowAnnouncement(false)}
-                    className="absolute top-[13px] right-[6px] p-1 hover:bg-[var(--color-neutral-g-50)] rounded transition-colors"
+                    className="absolute top-3 right-2 p-1 hover:bg-[var(--color-neutral-g-50)] rounded transition-colors"
                   >
                     <X size={16} />
                   </button>
