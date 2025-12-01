@@ -634,10 +634,12 @@ function ProfitBarChart({ viewType, quarterNumber, isCurrentPeriod = false }: Pr
   const roundedMax = Math.ceil(maxValue / 500) * 500
 
   // Find month separator indices and labels for quarter view
+  // The dotted line appears BETWEEN months (at the start of month 2 and 3, not month 1)
+  // The label shows the month that's starting after the line
   const monthSeparators = useMemo(() => {
     if (viewType !== 'quarter') return []
     return chartData
-      .map((d, idx) => d.isMonthStart ? { idx, label: d.monthLabel || '' } : null)
+      .map((d, idx) => d.isMonthStart && idx > 0 ? { idx, label: d.monthLabel || '' } : null)
       .filter((item): item is { idx: number; label: string } => item !== null)
   }, [chartData, viewType])
 
