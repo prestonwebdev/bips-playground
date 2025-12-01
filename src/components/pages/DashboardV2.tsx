@@ -256,7 +256,7 @@ function MonthMetricsLayout({ data, previousPeriod, isCurrentPeriod }: MonthMetr
   const [hoveredSegment, setHoveredSegment] = useState<'costs' | 'profit' | null>(null)
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6 pt-6 pb-6">
       {/* Three metric cards */}
       <div className="flex gap-4 mb-8">
         {/* Revenue Card */}
@@ -434,7 +434,7 @@ function QuarterYearMetricsLayout({ data, previousPeriod, isCurrentPeriod, viewT
   const periodLabel = viewType === 'quarter' ? 'from last quarter' : 'from last year'
 
   return (
-    <div className="px-6 pb-6">
+    <div className="px-6 pt-6 pb-6">
       {/* Three metric cards */}
       <div className="flex gap-4 mb-8">
         {/* Revenue Card */}
@@ -582,6 +582,7 @@ function ProfitBarChart({ viewType, quarterNumber, isCurrentPeriod = false }: Pr
           dateRange: month,
           profit,
           isProfit: profit > 0,
+          uniqueKey: month, // Same as label for year view
         }
       })
     } else {
@@ -594,10 +595,11 @@ function ProfitBarChart({ viewType, quarterNumber, isCurrentPeriod = false }: Pr
       ]
       const months = quarterNumber ? quarterMonths[quarterNumber - 1] : quarterMonths[2]
 
-      const weeks: Array<{ label: string; dateRange: string; profit: number; isProfit: boolean; isMonthStart?: boolean; monthLabel?: string }> = []
+      const weeks: Array<{ label: string; dateRange: string; profit: number; isProfit: boolean; isMonthStart?: boolean; monthLabel?: string; uniqueKey: string }> = []
 
       // Generate actual date ranges for weeks
       let dayOfMonth = 1
+      let weekIndex = 0
       months.forEach((month, monthIdx) => {
         const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         const monthDays = daysInMonth[(quarterNumber ? (quarterNumber - 1) * 3 : 6) + monthIdx]
@@ -617,10 +619,12 @@ function ProfitBarChart({ viewType, quarterNumber, isCurrentPeriod = false }: Pr
             isProfit: profit > 0,
             isMonthStart: weekInMonth === 0,
             monthLabel: month, // Always include month for reference labels
+            uniqueKey: `w${weekIndex}`, // Unique key for ReferenceLine positioning
           })
 
           dayOfMonth = endDay + 1
           weekInMonth++
+          weekIndex++
         }
         dayOfMonth = 1 // Reset for next month
       })
@@ -683,7 +687,7 @@ function ProfitBarChart({ viewType, quarterNumber, isCurrentPeriod = false }: Pr
         barCategoryGap={viewType === 'year' ? '20%' : '15%'}
       >
         <XAxis
-          dataKey="label"
+          dataKey={viewType === 'quarter' ? 'uniqueKey' : 'label'}
           tickLine={false}
           axisLine={false}
           tickMargin={8}
@@ -692,6 +696,10 @@ function ProfitBarChart({ viewType, quarterNumber, isCurrentPeriod = false }: Pr
             fontSize: 11,
             fontFamily: 'Poppins',
           }}
+          tickFormatter={viewType === 'quarter' ? (value) => {
+            const item = chartData.find(d => d.uniqueKey === value)
+            return item?.label || value
+          } : undefined}
           interval={viewType === 'year' ? 0 : 'preserveStartEnd'}
         />
         <YAxis hide domain={[-roundedMax * 0.3, roundedMax]} />
@@ -700,8 +708,8 @@ function ProfitBarChart({ viewType, quarterNumber, isCurrentPeriod = false }: Pr
         {monthSeparators.map(({ idx, label }) => (
           <ReferenceLine
             key={`sep-${idx}`}
-            x={chartData[idx]?.label}
-            stroke="#e5e7e7"
+            x={chartData[idx]?.uniqueKey || chartData[idx]?.label}
+            stroke="#c1c5c5"
             strokeWidth={1}
             strokeDasharray="4 4"
             label={{
