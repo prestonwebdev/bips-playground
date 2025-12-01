@@ -1,0 +1,215 @@
+import { useState } from 'react'
+import { LayoutDashboard, CreditCard, Landmark, X, Settings, User, LogOut, HelpCircle, ChevronUp, PanelLeftClose, PanelLeft } from 'lucide-react'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from '@/components/ui/sidebar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+interface MenuItem {
+  icon: typeof LayoutDashboard
+  label: string
+  href: string
+}
+
+const menuItems: MenuItem[] = [
+  {
+    icon: LayoutDashboard,
+    label: 'Overview',
+    href: '/overview',
+  },
+  {
+    icon: CreditCard,
+    label: 'Transactions',
+    href: '/transactions',
+  },
+  {
+    icon: Landmark,
+    label: 'Linked Accounts',
+    href: '/linked-accounts',
+  },
+]
+
+interface AppSidebarProps {
+  activePage?: string
+  onPageChange?: (page: string) => void
+}
+
+export function AppSidebar({ activePage = '/overview', onPageChange }: AppSidebarProps) {
+  const [showAnnouncement, setShowAnnouncement] = useState(true)
+  const { state, toggleSidebar } = useSidebar()
+
+  const handlePageChange = (href: string) => {
+    onPageChange?.(href)
+  }
+
+  return (
+    <Sidebar collapsible="icon" className="border-r border-[var(--color-neutral-g-100)]">
+      {/* Header with Logo and Toggle */}
+      <SidebarHeader className="border-b-0 p-[var(--space-20)] pb-0 group-data-[collapsible=icon]:p-4">
+        <div className="flex items-center justify-between px-[10px] py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:justify-center">
+          {/* Logo - hidden when collapsed */}
+          <div className="text-2xl font-bold font-['Poppins'] text-[var(--color-neutral-n-800)] group-data-[collapsible=icon]:hidden">
+            bips
+          </div>
+          {/* Collapse Toggle - shown when expanded */}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-md hover:bg-[var(--color-neutral-g-50)] transition-colors text-[var(--color-neutral-n-600)] group-data-[collapsible=icon]:hidden"
+          >
+            <PanelLeftClose size={18} />
+          </button>
+          {/* Expand Toggle - shown when collapsed */}
+          <button
+            onClick={toggleSidebar}
+            className="hidden group-data-[collapsible=icon]:flex p-1.5 rounded-md hover:bg-[var(--color-neutral-g-50)] transition-colors text-[var(--color-neutral-n-600)]"
+          >
+            <PanelLeft size={18} />
+          </button>
+        </div>
+      </SidebarHeader>
+
+      {/* Main Navigation Content */}
+      <SidebarContent className="p-[var(--space-20)] pt-[var(--space-16)] group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:pt-4">
+        <SidebarGroup className="group-data-[collapsible=icon]:p-0">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-3 group-data-[collapsible=icon]:items-center">
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={activePage === item.href}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handlePageChange(item.href)
+                    }}
+                    tooltip={item.label}
+                    className="w-full px-[16px] py-[12px] rounded-[var(--radius-full)] transition-all duration-200 data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold hover:bg-[var(--color-neutral-g-50)] font-medium text-[var(--color-neutral-n-800)] text-[16px] leading-[28px] tracking-[-0.32px] font-['Poppins'] justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:rounded-full"
+                  >
+                    <a href={item.href} className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0">
+                      <item.icon className="flex-shrink-0" size={20} />
+                      <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Announcement Card - only show when expanded */}
+        {showAnnouncement && state === 'expanded' && (
+          <div className="mt-auto pt-4">
+            <div className="relative bg-white border border-[var(--color-neutral-g-200)] rounded-[var(--radius-12)] h-[212px] overflow-hidden">
+              <div className="flex flex-col h-full">
+                <div className="bg-[var(--color-neutral-g-50)] flex-1" />
+                <div className="px-3 py-[10px] pt-1">
+                  <p className="text-[14px] font-semibold text-[var(--color-neutral-n-800)] leading-[28px] tracking-[-0.28px] font-['Poppins']">
+                    Company documents just launched!
+                  </p>
+                  <p className="text-[13px] font-normal text-[var(--color-neutral-n-600)] leading-[28px] tracking-[-0.26px] font-['Poppins']">
+                    See what's new
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAnnouncement(false)}
+                  className="absolute top-[13px] right-[6px] p-1 hover:bg-[var(--color-neutral-g-50)] rounded transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </SidebarContent>
+
+      {/* Footer with Account Dropdown */}
+      <SidebarFooter className="p-[var(--space-20)] pt-0 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:pb-4">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="w-full px-2 py-2 rounded-lg hover:bg-[var(--color-neutral-g-50)] transition-colors data-[state=open]:bg-[var(--color-neutral-g-50)] group-data-[collapsible=icon]:!p-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:mx-auto"
+                  tooltip={{
+                    children: (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold">Pied Piper</span>
+                        <span className="text-xs text-muted-foreground">contact@piedpiper.com</span>
+                      </div>
+                    ),
+                  }}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0 group-data-[collapsible=icon]:justify-center">
+                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white font-bold flex-shrink-0 text-sm group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:h-10 group-data-[collapsible=icon]:text-base">
+                      PP
+                    </div>
+                    <div className="flex flex-col items-start flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
+                      <span className="text-[var(--color-neutral-n-800)] text-sm font-semibold font-['Poppins'] truncate w-full text-left">
+                        Pied Piper
+                      </span>
+                      <span className="text-xs text-[var(--color-neutral-n-600)] font-['Poppins'] truncate w-full text-left">
+                        contact@piedpiper.com
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronUp className="ml-auto flex-shrink-0 group-data-[collapsible=icon]:hidden" size={16} />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top"
+                align="end"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+              >
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-bold">
+                    PP
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">Pied Piper</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      contact@piedpiper.com
+                    </span>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="gap-2 cursor-pointer">
+                  <User className="h-4 w-4" />
+                  <span>Account</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2 cursor-pointer">
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2 cursor-pointer">
+                  <HelpCircle className="h-4 w-4" />
+                  <span>Support</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="gap-2 cursor-pointer">
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  )
+}
