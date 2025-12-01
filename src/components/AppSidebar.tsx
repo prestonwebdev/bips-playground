@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { LayoutDashboard, CreditCard, Landmark, X, Settings, User, LogOut, HelpCircle, ChevronUp, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
 import {
   Sidebar,
   SidebarContent,
@@ -60,8 +61,8 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
   return (
     <Sidebar collapsible="icon" className="border-r border-[var(--color-neutral-g-100)]">
       {/* Header with Logo and Toggle */}
-      <SidebarHeader className="border-b-0 p-[var(--space-20)] pb-0 group-data-[collapsible=icon]:p-4">
-        <div className="flex items-center justify-between px-[10px] py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:justify-center">
+      <SidebarHeader className="border-b-0 px-4 pt-5 pb-0 group-data-[collapsible=icon]:p-4">
+        <div className="flex items-center justify-between px-1 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:justify-center">
           {/* Logo - hidden when collapsed */}
           <div className="text-2xl font-bold font-['Poppins'] text-[var(--color-neutral-n-800)] group-data-[collapsible=icon]:hidden">
             bips
@@ -84,7 +85,7 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
       </SidebarHeader>
 
       {/* Main Navigation Content */}
-      <SidebarContent className="p-[var(--space-20)] pt-[var(--space-16)] group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:pt-4">
+      <SidebarContent className="px-4 pt-4 pb-5 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:pt-4">
         <SidebarGroup className="group-data-[collapsible=icon]:p-0">
           <SidebarGroupContent>
             <SidebarMenu className="gap-3 group-data-[collapsible=icon]:items-center">
@@ -98,7 +99,7 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
                       handlePageChange(item.href)
                     }}
                     tooltip={item.label}
-                    className="w-full px-[16px] py-[12px] rounded-[var(--radius-full)] transition-all duration-200 data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold hover:bg-[var(--color-neutral-g-50)] font-medium text-[var(--color-neutral-n-800)] text-[16px] leading-[28px] tracking-[-0.32px] font-['Poppins'] justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:rounded-full"
+                    className="w-full !px-5 !py-3 !h-auto !rounded-full transition-all duration-200 data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold hover:bg-[var(--color-neutral-g-50)] font-medium text-[var(--color-neutral-n-800)] text-[15px] leading-[28px] tracking-[-0.3px] font-['Poppins'] justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!py-0"
                   >
                     <a href={item.href} className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0">
                       <item.icon className="flex-shrink-0" size={20} />
@@ -111,34 +112,49 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Announcement Card - only show when expanded */}
-        {showAnnouncement && state === 'expanded' && (
-          <div className="mt-auto pt-4">
-            <div className="relative bg-white border border-[var(--color-neutral-g-200)] rounded-[var(--radius-12)] h-[212px] overflow-hidden">
-              <div className="flex flex-col h-full">
-                <div className="bg-[var(--color-neutral-g-50)] flex-1" />
-                <div className="px-3 py-[10px] pt-1">
-                  <p className="text-[14px] font-semibold text-[var(--color-neutral-n-800)] leading-[28px] tracking-[-0.28px] font-['Poppins']">
-                    Company documents just launched!
-                  </p>
-                  <p className="text-[13px] font-normal text-[var(--color-neutral-n-600)] leading-[28px] tracking-[-0.26px] font-['Poppins']">
-                    See what's new
-                  </p>
+        {/* Announcement Card - only show when expanded with blur/fade transition */}
+        <AnimatePresence mode="wait">
+          {showAnnouncement && state === 'expanded' && (
+            <motion.div
+              className="mt-auto pt-4"
+              initial={{ opacity: 0, filter: 'blur(8px)' }}
+              animate={{
+                opacity: 1,
+                filter: 'blur(0px)',
+                transition: { duration: 0.2, ease: 'easeOut', delay: 0.2 }
+              }}
+              exit={{
+                opacity: 0,
+                filter: 'blur(8px)',
+                transition: { duration: 0.05, ease: 'easeOut' }
+              }}
+            >
+              <div className="relative bg-white border border-[var(--color-neutral-g-200)] rounded-[var(--radius-12)] h-[212px] overflow-hidden">
+                <div className="flex flex-col h-full">
+                  <div className="bg-[var(--color-neutral-g-50)] flex-1" />
+                  <div className="px-3 py-[10px] pt-1">
+                    <p className="text-[14px] font-semibold text-[var(--color-neutral-n-800)] leading-[28px] tracking-[-0.28px] font-['Poppins']">
+                      Company documents just launched!
+                    </p>
+                    <p className="text-[13px] font-normal text-[var(--color-neutral-n-600)] leading-[28px] tracking-[-0.26px] font-['Poppins']">
+                      See what's new
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAnnouncement(false)}
+                    className="absolute top-[13px] right-[6px] p-1 hover:bg-[var(--color-neutral-g-50)] rounded transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowAnnouncement(false)}
-                  className="absolute top-[13px] right-[6px] p-1 hover:bg-[var(--color-neutral-g-50)] rounded transition-colors"
-                >
-                  <X size={16} />
-                </button>
               </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </SidebarContent>
 
       {/* Footer with Account Dropdown */}
-      <SidebarFooter className="p-[var(--space-20)] pt-0 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:pb-4">
+      <SidebarFooter className="px-4 pb-5 pt-0 group-data-[collapsible=icon]:px-3 group-data-[collapsible=icon]:pb-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
