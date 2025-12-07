@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { SidebarProvider, SidebarInset, useSidebar } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/AppSidebar'
 import DashboardV1 from '@/components/pages/DashboardV1'
-import DashboardV2 from '@/components/pages/DashboardV2'
-import DashboardV3 from '@/components/pages/DashboardV3'
 import Transactions from '@/components/pages/Transactions'
 import LinkedAccounts from '@/components/pages/LinkedAccounts'
 import ChatBar from '@/components/ChatBar'
@@ -25,18 +23,14 @@ function DashboardContent({ currentPage, onPageChange }: DashboardContentProps) 
   const renderPage = () => {
     switch (currentPage) {
       case '/overview':
-      case '/overview-v2':
-        return <DashboardV2 />
       case '/overview-v1':
         return <DashboardV1 />
-      case '/overview-v3':
-        return <DashboardV3 />
       case '/transactions':
         return <Transactions />
       case '/linked-accounts':
         return <LinkedAccounts />
       default:
-        return <DashboardV2 />
+        return <DashboardV1 />
     }
   }
 
@@ -53,7 +47,7 @@ function DashboardContent({ currentPage, onPageChange }: DashboardContentProps) 
   )
 }
 
-export default function DashboardV2Demo() {
+export default function DashboardV1Demo() {
   const [currentPage, setCurrentPage] = useState('/overview')
 
   return (

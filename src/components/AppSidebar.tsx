@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, CreditCard, Landmark, X, Settings, User, LogOut, HelpCircle, ChevronUp, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Landmark, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Sidebar,
@@ -11,6 +11,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   useSidebar,
 } from '@/components/ui/sidebar'
 import {
@@ -20,11 +23,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+
+interface SubMenuItem {
+  label: string
+  href: string
+}
 
 interface MenuItem {
   icon: typeof LayoutDashboard
   label: string
   href: string
+  subItems?: SubMenuItem[]
 }
 
 const menuItems: MenuItem[] = [
@@ -32,6 +46,11 @@ const menuItems: MenuItem[] = [
     icon: LayoutDashboard,
     label: 'Overview',
     href: '/overview',
+    subItems: [
+      { label: 'Version 1', href: '/overview-v1' },
+      { label: 'Version 2', href: '/overview-v2' },
+      { label: 'Version 3', href: '/overview-v3' },
+    ],
   },
   {
     icon: CreditCard,
@@ -91,21 +110,59 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
             <SidebarMenu className="gap-3 group-data-[collapsible=icon]:items-center">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={activePage === item.href}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      handlePageChange(item.href)
-                    }}
-                    tooltip={item.label}
-                    className="w-full !px-5 !py-3 !h-auto !rounded-full transition-all duration-200 data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold hover:bg-[var(--color-neutral-g-50)] font-medium text-[var(--color-neutral-n-800)] text-[15px] leading-[28px] tracking-[-0.3px] font-['Poppins'] justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!py-0"
-                  >
-                    <a href={item.href} className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0">
-                      <item.icon className="flex-shrink-0" size={20} />
-                      <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                    </a>
-                  </SidebarMenuButton>
+                  {item.subItems ? (
+                    <Collapsible
+                      defaultOpen={activePage?.startsWith('/overview')}
+                      className="group/collapsible"
+                    >
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          isActive={activePage === item.href || activePage?.startsWith('/overview-v')}
+                          tooltip={item.label}
+                          className="w-full !px-5 !py-3 !h-auto !rounded-full transition-all duration-200 data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold hover:bg-[var(--color-neutral-g-50)] font-medium text-[var(--color-neutral-n-800)] text-[15px] leading-[28px] tracking-[-0.3px] font-['Poppins'] justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!py-0"
+                        >
+                          <item.icon className="flex-shrink-0" size={20} />
+                          <span className="group-data-[collapsible=icon]:hidden flex-1">{item.label}</span>
+                          <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" size={16} />
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="group-data-[collapsible=icon]:hidden">
+                        <SidebarMenuSub className="ml-7 mt-1 border-l border-[var(--color-neutral-g-200)] pl-3">
+                          {item.subItems.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={activePage === subItem.href}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  handlePageChange(subItem.href)
+                                }}
+                                className="!py-2 !px-3 !rounded-lg text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold data-[active=true]:text-[var(--color-neutral-n-800)]"
+                              >
+                                <a href={subItem.href}>{subItem.label}</a>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ) : (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={activePage === item.href}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handlePageChange(item.href)
+                      }}
+                      tooltip={item.label}
+                      className="w-full !px-5 !py-3 !h-auto !rounded-full transition-all duration-200 data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold hover:bg-[var(--color-neutral-g-50)] font-medium text-[var(--color-neutral-n-800)] text-[15px] leading-[28px] tracking-[-0.3px] font-['Poppins'] justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!py-0"
+                    >
+                      <a href={item.href} className="flex items-center gap-3 group-data-[collapsible=icon]:gap-0">
+                        <item.icon className="flex-shrink-0" size={20} />
+                        <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
