@@ -162,10 +162,12 @@ const stateHeights: Record<ChatState, number> = {
 interface ChatBarProps {
   /** Offset from left edge to center within content area (e.g., sidebar width) */
   contentOffset?: number
+  /** Start with the chat in focused state (visual focus, not autofocus) */
+  defaultFocused?: boolean
 }
 
-export default function ChatBar({ contentOffset = 0 }: ChatBarProps) {
-  const [state, setState] = useState<ChatState>('minimized')
+export default function ChatBar({ contentOffset = 0, defaultFocused = false }: ChatBarProps) {
+  const [state, setState] = useState<ChatState>(defaultFocused ? 'focused' : 'minimized')
   const [inputValue, setInputValue] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [customHeight, setCustomHeight] = useState<number | null>(null)

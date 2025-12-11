@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, CreditCard, Landmark, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { LayoutDashboard, CreditCard, Landmark, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, FileSpreadsheet } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Sidebar,
@@ -50,7 +50,13 @@ const menuItems: MenuItem[] = [
       { label: 'Version 1', href: '/overview-v1' },
       { label: 'Version 2', href: '/overview-v2' },
       { label: 'Version 3', href: '/overview-v3' },
+      { label: 'Version 4', href: '/overview-v4' },
     ],
+  },
+  {
+    icon: FileSpreadsheet,
+    label: 'Reports',
+    href: '/reports',
   },
   {
     icon: CreditCard,
@@ -67,9 +73,11 @@ const menuItems: MenuItem[] = [
 interface AppSidebarProps {
   activePage?: string
   onPageChange?: (page: string) => void
+  /** Background color variant for the sidebar */
+  sidebarBg?: 'white' | 'gray'
 }
 
-export function AppSidebar({ activePage = '/overview', onPageChange }: AppSidebarProps) {
+export function AppSidebar({ activePage = '/overview', onPageChange, sidebarBg = 'white' }: AppSidebarProps) {
   const [showAnnouncement, setShowAnnouncement] = useState(true)
   const { state, toggleSidebar } = useSidebar()
 
@@ -77,8 +85,12 @@ export function AppSidebar({ activePage = '/overview', onPageChange }: AppSideba
     onPageChange?.(href)
   }
 
+  const sidebarBgClass = sidebarBg === 'gray'
+    ? 'bg-[var(--color-neutral-g-50)]'
+    : 'bg-[var(--color-white)]'
+
   return (
-    <Sidebar collapsible="icon" className="border-r border-[var(--color-neutral-g-100)]">
+    <Sidebar collapsible="icon" className={`border-r border-[var(--color-neutral-g-100)] ${sidebarBgClass}`}>
       {/* Header with Logo and Toggle */}
       <SidebarHeader className="border-b-0 px-4 pt-5 pb-0 group-data-[collapsible=icon]:p-4">
         <div className="flex items-center justify-between px-1 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-0 group-data-[collapsible=icon]:justify-center">
