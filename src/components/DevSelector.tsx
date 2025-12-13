@@ -17,9 +17,9 @@ interface DevSelectorProps {
 }
 
 const versions = [
-  { id: 'v4', label: 'V4', description: 'Chat-focused' },
-  { id: 'v2', label: 'V2', description: 'Card grid' },
   { id: 'v1', label: 'V1', description: 'Original' },
+  { id: 'v2', label: 'V2', description: 'Current' },
+  { id: 'v3', label: 'V3', description: 'Coming soon' },
 ]
 
 export default function DevSelector({ currentVersion, onVersionChange }: DevSelectorProps) {
