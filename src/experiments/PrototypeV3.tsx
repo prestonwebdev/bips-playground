@@ -9,7 +9,7 @@ import { useState, useCallback } from 'react'
 import { SidebarProvider, SidebarInset, useSidebar } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/AppSidebar'
 import DashboardV4 from '@/components/pages/DashboardV4'
-import Reports from '@/components/pages/Reports'
+import ReportsV3 from '@/components/pages/ReportsV3'
 import Transactions from '@/components/pages/Transactions'
 import ChatBar from '@/components/ChatBar'
 import { UnicornAnimation } from '@/components/UnicornAnimation'
@@ -37,13 +37,10 @@ function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart,
   const renderPage = () => {
     switch (currentPage) {
       case '/overview':
-        // TODO: Replace with V3-specific overview component
         return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} />
       case '/reports':
-        // TODO: Replace with V3-specific reports component
-        return <Reports initialTab={initialReportsTab} onInitialTabUsed={onReportsTabUsed} />
+        return <ReportsV3 initialTab={initialReportsTab} onInitialTabUsed={onReportsTabUsed} onStartChat={onStartChat} />
       case '/transactions':
-        // TODO: Replace with V3-specific transactions component
         return <Transactions />
       default:
         return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} />
@@ -55,7 +52,7 @@ function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart,
   return (
     <>
       <AppSidebar activePage={currentPage} onPageChange={onPageChange} sidebarBg="gray" />
-      <SidebarInset className={`flex-1 relative ${currentPage === '/reports' ? 'bg-[var(--color-neutral-g-50)]' : 'bg-white'}`}>
+      <SidebarInset className="flex-1 relative bg-white">
         {/* Unicorn Animation - Full size background, only on Overview */}
         {isOverviewPage && (
           <div className="absolute inset-0 z-0 pointer-events-none">

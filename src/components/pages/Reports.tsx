@@ -77,7 +77,6 @@ import {
   CreditCard,
   Landmark,
   FileText,
-  MessageCircle,
   Copy,
   UtensilsCrossed,
   Megaphone,
@@ -336,16 +335,38 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
   const data = getFinancialDataByView(viewType)
   const currentPeriod: FinancialPeriod = data[currentIndex] || data[0]
 
-  // Generate account balances - always show current values (not period-dependent)
+  // Generate account balances - for current period display
   const accountBalances = useMemo(() => {
-    // Always use current month for cash on hand - it's a point-in-time value
-    return generateAccountBalances('month', SIMULATED_MONTH)
-  }, [])
+    return generateAccountBalances(viewType, currentIndex)
+  }, [viewType, currentIndex])
 
-  // Calculate cash on hand total from account balances
-  const cashOnHandTotal = useMemo(() => {
-    return accountBalances.reduce((sum, acc) => sum + acc.amount, 0)
-  }, [accountBalances])
+  // Calculate cash on hand value and "as of" label for past periods
+  const cashOnHandData = useMemo(() => {
+    const cashData = generateCashOnHandData(viewType, currentIndex)
+    const validData = cashData.filter(d => d.total !== null)
+
+    // For current period, get the last valid value (today's value)
+    // For past periods, get the last value (end of period value)
+    const isCurrentPeriod = viewType === 'month'
+      ? currentIndex === SIMULATED_MONTH
+      : currentIndex === (SIMULATED_YEAR - 2023)
+
+    const value = validData.length > 0 ? validData[validData.length - 1].total : 0
+
+    // Generate "at the end of" label for past periods
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    let asOfLabel: string | null = null
+    if (!isCurrentPeriod) {
+      if (viewType === 'month') {
+        asOfLabel = `at the end of ${monthNames[currentIndex]}`
+      } else {
+        const year = 2023 + currentIndex
+        asOfLabel = `at the end of ${year}`
+      }
+    }
+
+    return { value, asOfLabel }
+  }, [viewType, currentIndex])
 
   // Calculate total and comparison based on active tab
   const { currentTotal } = useMemo(() => {
@@ -364,14 +385,14 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
         total = currentPeriod.costs
         break
       case 'cash':
-        total = cashOnHandTotal
+        total = cashOnHandData.value ?? 0
         break
     }
 
     return {
       currentTotal: total,
     }
-  }, [activeTab, currentPeriod, cashOnHandTotal])
+  }, [activeTab, currentPeriod, cashOnHandData])
 
   const handleViewChange = useCallback((newView: 'month' | 'year') => {
     setViewType(newView)
@@ -483,21 +504,17 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
               </TabsTrigger>
             </TabsList>
 
-            {/* Right: Action buttons with tooltips */}
-            <div className="flex items-center gap-3">
-              <ActionButton
-                icon={FileText}
-                label="View P&L Report"
-                tooltip="Generate a detailed profit & loss statement"
-                variant="primary"
-              />
-              <ActionButton
-                icon={MessageCircle}
-                label="Ask a Question"
-                tooltip="Ask the AI assistant about this data"
-                variant="secondary"
-              />
-            </div>
+            {/* Right: Action button - only show on Profit tab */}
+            {activeTab === 'profit' && (
+              <div className="flex items-center gap-3">
+                <ActionButton
+                  icon={FileText}
+                  label="View P&L Report"
+                  tooltip="Generate a detailed profit & loss statement"
+                  variant="primary"
+                />
+              </div>
+            )}
           </div>
 
           {/* Total Value Display */}
@@ -522,6 +539,12 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
                   duration={0.25}
                 />
               </span>
+              {/* Show "as of" label for cash on hand in past periods */}
+              {activeTab === 'cash' && cashOnHandData.asOfLabel && (
+                <p className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mt-1">
+                  {cashOnHandData.asOfLabel}
+                </p>
+              )}
             </div>
           </div>
 
@@ -722,7 +745,7 @@ function ProfitBreakdown({ revenue, costs }: ProfitBreakdownProps) {
       label: 'Income',
       amount: revenue,
       percent: 100,
-      color: 'bg-[var(--color-primary-p-500)]',
+      color: 'bg-[#2a4a47]',
       textColor: 'text-[var(--color-neutral-n-800)]',
     },
     {

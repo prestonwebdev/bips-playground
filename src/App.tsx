@@ -13,12 +13,12 @@ const STORAGE_KEY = 'bips-prototype-version'
  *
  * Versions:
  * - V1: Original prototype (DashboardV1Demo)
- * - V2: Current prototype with chat-focused overview, reports, transactions (DashboardV4Demo)
- * - V3: Future prototype (PrototypeV3 - placeholder)
+ * - V2: Previous prototype with chat-focused overview, reports, transactions (DashboardV4Demo)
+ * - V3: Current prototype (PrototypeV3)
  */
 function PrototypeSelector() {
   const [version, setVersion] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY) || 'v2'
+    return localStorage.getItem(STORAGE_KEY) || 'v3'
   })
 
   useEffect(() => {
@@ -34,7 +34,7 @@ function PrototypeSelector() {
       case 'v3':
         return <PrototypeV3 />
       default:
-        return <DashboardV4Demo />
+        return <PrototypeV3 />
     }
   }
 

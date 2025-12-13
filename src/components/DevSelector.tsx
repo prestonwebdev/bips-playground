@@ -18,8 +18,8 @@ interface DevSelectorProps {
 
 const versions = [
   { id: 'v1', label: 'V1', description: 'Original' },
-  { id: 'v2', label: 'V2', description: 'Current' },
-  { id: 'v3', label: 'V3', description: 'Coming soon' },
+  { id: 'v2', label: 'V2', description: 'Previous' },
+  { id: 'v3', label: 'V3', description: 'Current' },
 ]
 
 export default function DevSelector({ currentVersion, onVersionChange }: DevSelectorProps) {

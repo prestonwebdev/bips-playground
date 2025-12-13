@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, Cell, ReferenceLine, LabelList, CartesianG
 import {
   SIMULATED_MONTH,
   SIMULATED_DAY,
+  monthlyFinancialData,
 } from '@/lib/quarterly-data'
 
 /**
@@ -86,7 +87,7 @@ export interface ProfitBarChartProps {
     costs: number
     cash: number
   }>  // Kept for type compatibility but not used - data is generated internally
-  viewType: 'month' | 'quarter' | 'year'
+  viewType: 'month' | 'quarter' | 'year' | 'monthlyComparison'
   quarterNumber?: number
   monthNumber?: number  // 0-11 for month index
   isCurrentPeriod?: boolean
@@ -250,6 +251,38 @@ export function ProfitBarChart({ viewType, quarterNumber, monthNumber, className
             isPast,
           }
         })
+    } else if (viewType === 'monthlyComparison') {
+      // For monthly comparison view, show just this month and last month
+      // Pull from the same monthlyFinancialData used for totals
+      const targetMonth = monthNumber ?? currentMonth
+      const lastMonth = targetMonth === 0 ? 11 : targetMonth - 1
+
+      const months = [lastMonth, targetMonth]
+      return months.map((monthIdx, idx) => {
+        const isPreviousInComparison = idx === 0 // First bar is the previous month
+        const isPast = monthIdx < currentMonth
+
+        // Get actual data from monthlyFinancialData
+        const monthData = monthlyFinancialData[monthIdx]
+        const revenue = monthData?.revenue ?? 0
+        const costs = monthData?.costs ?? 0
+        const profit = revenue - costs
+
+        return {
+          label: shortMonthNames[monthIdx],
+          dateRange: `${shortMonthNames[monthIdx]} 2025`,
+          profit,
+          revenue,
+          costs,
+          isProfit: profit > 0,
+          uniqueKey: `m${monthIdx}`,
+          isPast,
+          isFuture: false,
+          isToday: false,
+          hasNoTransactions: false,
+          isPreviousInComparison, // Flag for styling previous month as gray
+        }
+      })
     } else {
       // For quarter view, generate weekly data with date ranges
       const quarterMonths = [
@@ -652,9 +685,12 @@ export function ProfitBarChart({ viewType, quarterNumber, monthNumber, className
           {chartDataWithGap.map((entry, index) => {
             // For zero-transaction days, show light grey
             const hasNoTransactions = 'hasNoTransactions' in entry && entry.hasNoTransactions
+            const isPreviousInComparison = 'isPreviousInComparison' in entry && entry.isPreviousInComparison
             let fill: string
             if (hasNoTransactions) {
               fill = '#e5e7e7' // Light grey for no transactions
+            } else if (isPreviousInComparison) {
+              fill = '#c1c5c5' // Light gray for previous month in comparison
             } else if (entry.profit > 0) {
               fill = CHART_COLORS.profit
             } else {

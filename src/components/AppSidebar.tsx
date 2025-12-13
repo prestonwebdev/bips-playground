@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { LayoutDashboard, CreditCard, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, FileSpreadsheet } from 'lucide-react'
+import { LayoutDashboard, CreditCard, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, BarChart3, Landmark } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Sidebar,
@@ -34,21 +35,21 @@ interface SubMenuItem {
   href: string
 }
 
-interface MenuItem {
-  icon: typeof LayoutDashboard
+export interface NavItem {
+  icon: LucideIcon
   label: string
   href: string
   subItems?: SubMenuItem[]
 }
 
-const menuItems: MenuItem[] = [
+const defaultNavItems: NavItem[] = [
   {
     icon: LayoutDashboard,
     label: 'Overview',
     href: '/overview',
   },
   {
-    icon: FileSpreadsheet,
+    icon: BarChart3,
     label: 'Reports',
     href: '/reports',
   },
@@ -59,16 +60,38 @@ const menuItems: MenuItem[] = [
   },
 ]
 
+// V1 navigation - no reports, has accounts
+export const v1NavItems: NavItem[] = [
+  {
+    icon: LayoutDashboard,
+    label: 'Overview',
+    href: '/overview',
+  },
+  {
+    icon: CreditCard,
+    label: 'Transactions',
+    href: '/transactions',
+  },
+  {
+    icon: Landmark,
+    label: 'Accounts',
+    href: '/accounts',
+  },
+]
+
 interface AppSidebarProps {
   activePage?: string
   onPageChange?: (page: string) => void
   /** Background color variant for the sidebar */
   sidebarBg?: 'white' | 'gray'
+  /** Custom navigation items (defaults to standard nav) */
+  navItems?: NavItem[]
 }
 
-export function AppSidebar({ activePage = '/overview', onPageChange, sidebarBg = 'white' }: AppSidebarProps) {
+export function AppSidebar({ activePage = '/overview', onPageChange, sidebarBg = 'white', navItems = defaultNavItems }: AppSidebarProps) {
   const [showAnnouncement, setShowAnnouncement] = useState(true)
   const { state, toggleSidebar } = useSidebar()
+  const menuItems = navItems
 
   const handlePageChange = (href: string) => {
     onPageChange?.(href)
