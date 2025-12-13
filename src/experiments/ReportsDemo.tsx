@@ -43,8 +43,8 @@ function ReportsContent({ currentPage, onPageChange }: { currentPage: string; on
   return (
     <>
       <AppSidebar activePage={currentPage} onPageChange={onPageChange} />
-      <SidebarInset className="flex-1">
-        <div className="flex-1 overflow-auto bg-[var(--color-neutral-g-50)] pb-24 pt-10 px-12">
+      <SidebarInset className="flex-1 bg-[var(--color-neutral-g-50)]">
+        <div className="flex-1 overflow-auto pb-24 pt-10 px-12">
           {renderPage()}
         </div>
       </SidebarInset>

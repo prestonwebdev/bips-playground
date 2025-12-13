@@ -60,7 +60,7 @@ const CHART_COLORS = {
 
 const chartConfig = {
   revenue: {
-    label: 'Revenue',
+    label: 'Income',
     color: CHART_COLORS.revenue,
   },
   costs: {
@@ -210,14 +210,14 @@ export default function DashboardV3() {
 
         {/* Main 6-Card Grid */}
         <div className="grid grid-cols-3 gap-4">
-          {/* Revenue Card */}
+          {/* Income Card */}
           <ExpandableCard
             layoutId="revenue-card"
             isExpanded={activeLightbox === 'revenue'}
             onExpand={() => openLightbox('revenue')}
             icon={CreditCard}
             iconColor="#467c75"
-            title="Revenue"
+            title="Income"
             value={currentPeriod.revenue}
             change={{ value: '+12%', isPositive: true }}
             periodLabel="from last month"
@@ -226,7 +226,7 @@ export default function DashboardV3() {
             sparklineColor="#467c75"
             expandedContent={
               <ExpandedCardContent
-                title="Revenue Overview"
+                title="Income Overview"
                 periods={lightboxData}
                 currentIndex={lightboxIndex}
                 viewType={lightboxViewType}
@@ -237,7 +237,7 @@ export default function DashboardV3() {
                 hasNext={lightboxHasNext}
                 onClose={() => setActiveLightbox(null)}
               >
-                <RevenueAreaChart period={lightboxPeriod} />
+                <IncomeAreaChart period={lightboxPeriod} />
               </ExpandedCardContent>
             }
           />
@@ -863,8 +863,8 @@ function InsightsCarousel() {
   )
 }
 
-// Revenue Area Chart for Lightbox
-function RevenueAreaChart({ period }: { period: FinancialPeriod }) {
+// Income Area Chart for Lightbox
+function IncomeAreaChart({ period }: { period: FinancialPeriod }) {
   // Generate daily revenue data for the month
   const chartData = useMemo(() => {
     const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -907,7 +907,7 @@ function RevenueAreaChart({ period }: { period: FinancialPeriod }) {
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-[var(--color-neutral-g-50)] rounded-xl p-4">
           <p className="text-[13px] text-[var(--color-neutral-n-600)] font-['Poppins'] mb-1">
-            Total Revenue
+            Total Income
           </p>
           <p className="text-[24px] font-semibold text-[var(--color-neutral-n-800)] font-['Poppins']">
             ${period.revenue.toLocaleString()}
@@ -1200,7 +1200,7 @@ function ProfitBarChartLightbox({ monthNumber }: { monthNumber?: number }) {
                     {dataPoint.dateRange}
                   </p>
                   <div className="flex items-center justify-between gap-4 mb-1">
-                    <span className="text-[13px] text-[#c1c5c5] font-['Poppins']">Revenue</span>
+                    <span className="text-[13px] text-[#c1c5c5] font-['Poppins']">Income</span>
                     <span className="text-[13px] font-medium text-white font-['Poppins']">
                       ${dataPoint.revenue.toLocaleString()}
                     </span>

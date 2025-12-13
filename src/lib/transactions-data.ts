@@ -97,7 +97,7 @@ export const mockCategories: Category[] = [
   { id: 'cat_8', name: 'Equipment', color: '#5C6B73', emoji: '🖥️' },
   { id: 'cat_9', name: 'Utilities', color: '#9B8B7A', emoji: '⚡' },
   { id: 'cat_10', name: 'Insurance', color: '#7A8B99', emoji: '🛡️' },
-  { id: 'cat_11', name: 'Revenue', color: '#2a4a47', emoji: '💵' },
+  { id: 'cat_11', name: 'Income', color: '#2a4a47', emoji: '💵' },
   { id: 'cat_12', name: 'Refund', color: '#4A9D8E', emoji: '↩️' },
   { id: 'cat_uncategorized', name: 'Uncategorized', color: '#8d9291', emoji: '❓' },
   // Hidden categories (personal/non-business)
@@ -176,7 +176,7 @@ const merchants = [
   { name: 'State Farm', category: 'cat_10', amountRange: [200, 800] },
   { name: 'Hartford Insurance', category: 'cat_10', amountRange: [300, 1000] },
 
-  // Revenue (positive amounts)
+  // Income (positive amounts)
   { name: 'Customer Payment', category: 'cat_11', amountRange: [1000, 25000], isIncome: true },
   { name: 'Stripe Payout', category: 'cat_11', amountRange: [500, 15000], isIncome: true },
   { name: 'Invoice Payment', category: 'cat_11', amountRange: [2000, 50000], isIncome: true },

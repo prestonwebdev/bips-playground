@@ -6,6 +6,7 @@ interface AnimatedNumberProps {
   format?: 'compact' | 'full'
   className?: string
   duration?: number
+  animate?: boolean
 }
 
 /**
@@ -19,13 +20,14 @@ export function AnimatedNumber({
   format = 'compact',
   className = '',
   duration = 0.6,
+  animate = true,
 }: AnimatedNumberProps) {
   const ref = useRef<HTMLSpanElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-50px' })
   const [hasAnimated, setHasAnimated] = useState(false)
 
   // Spring animation for smooth counting - faster and snappier
-  const springValue = useSpring(0, {
+  const springValue = useSpring(animate ? 0 : value, {
     stiffness: 200,
     damping: 30,
     duration: duration * 1000,
@@ -38,18 +40,22 @@ export function AnimatedNumber({
   })
 
   useEffect(() => {
+    if (!animate) {
+      springValue.set(value)
+      return
+    }
     if (isInView && !hasAnimated) {
       springValue.set(value)
       setHasAnimated(true)
     }
-  }, [isInView, value, springValue, hasAnimated])
+  }, [isInView, value, springValue, hasAnimated, animate])
 
   // Reset animation when value changes significantly
   useEffect(() => {
-    if (hasAnimated) {
+    if (hasAnimated || !animate) {
       springValue.set(value)
     }
-  }, [value, springValue, hasAnimated])
+  }, [value, springValue, hasAnimated, animate])
 
   return (
     <motion.span

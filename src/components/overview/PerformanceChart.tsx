@@ -30,7 +30,7 @@ const CHART_COLORS = {
 
 const chartConfig = {
   revenue: {
-    label: 'Revenue',
+    label: 'Income',
     color: CHART_COLORS.revenue,
   },
   costs: {
@@ -108,7 +108,7 @@ export function PerformanceChart({
                         style={{ backgroundColor: chartConfig.revenue.color }}
                       />
                       <span className="text-[13px] text-[#c1c5c5] font-['Poppins']">
-                        Revenue:
+                        Income:
                       </span>
                       <span className="text-[14px] font-medium text-white font-['Poppins']">
                         ${payload[0].payload.revenue?.toLocaleString()}
@@ -143,7 +143,7 @@ export function PerformanceChart({
               )
             }}
           />
-          {/* Revenue line */}
+          {/* Income line */}
           <Line
             type="monotone"
             dataKey="revenue"

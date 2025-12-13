@@ -164,9 +164,13 @@ interface ChatBarProps {
   contentOffset?: number
   /** Start with the chat in focused state (visual focus, not autofocus) */
   defaultFocused?: boolean
+  /** External prompt to start a chat with */
+  externalPrompt?: string | null
+  /** Callback when external prompt has been processed */
+  onExternalPromptProcessed?: () => void
 }
 
-export default function ChatBar({ contentOffset = 0, defaultFocused = false }: ChatBarProps) {
+export default function ChatBar({ contentOffset = 0, defaultFocused = false, externalPrompt, onExternalPromptProcessed }: ChatBarProps) {
   const [state, setState] = useState<ChatState>(defaultFocused ? 'focused' : 'minimized')
   const [inputValue, setInputValue] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -483,6 +487,36 @@ export default function ChatBar({ contentOffset = 0, defaultFocused = false }: C
       }, 50)
     }
   }, [state])
+
+  /** Handle external prompt - starts a chat with the provided text */
+  useEffect(() => {
+    if (externalPrompt) {
+      // Create and send the message
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: externalPrompt,
+      }
+
+      setMessages((prev) => [...prev, userMessage])
+      setInputValue('')
+      setUploadedFiles([])
+      setState('active')
+
+      // Simulate assistant response
+      setTimeout(() => {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: generateMockResponse(externalPrompt),
+        }
+        setMessages((prev) => [...prev, assistantMessage])
+      }, 1000)
+
+      // Notify parent that prompt was processed
+      onExternalPromptProcessed?.()
+    }
+  }, [externalPrompt, onExternalPromptProcessed])
 
   const showChatContent = state === 'active' || state === 'expanded'
   const showExpandControls = state === 'active' || state === 'expanded'
@@ -1119,7 +1153,7 @@ Fixed Costs like rent and licenses ($9K combined) that don't change month to mon
 Takeaways and Suggestions:
 You're still running profitable, which is great. To get more out of what you're making, you could think about putting a little extra into marketing (just 3% of sales right now) to help bring in new jobs, or look at whether supply costs can come down with bulk buying or new vendors. Even small tweaks here could add up over time.
 
-Would you like to explore marketing strategies to increase revenue? You can also move on to your Revenue Insights to see what's driving revenue performance.`
+Would you like to explore marketing strategies to increase income? You can also move on to your Income Insights to see what's driving income performance.`
   }
 
   return `I understand you're asking about "${userMessage}". Let me analyze that for your business and provide some insights.

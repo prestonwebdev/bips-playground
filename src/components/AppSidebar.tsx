@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, CreditCard, Landmark, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, FileSpreadsheet } from 'lucide-react'
+import { LayoutDashboard, CreditCard, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, FileSpreadsheet } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Sidebar,
@@ -46,12 +46,6 @@ const menuItems: MenuItem[] = [
     icon: LayoutDashboard,
     label: 'Overview',
     href: '/overview',
-    subItems: [
-      { label: 'Version 1', href: '/overview-v1' },
-      { label: 'Version 2', href: '/overview-v2' },
-      { label: 'Version 3', href: '/overview-v3' },
-      { label: 'Version 4', href: '/overview-v4' },
-    ],
   },
   {
     icon: FileSpreadsheet,
@@ -62,11 +56,6 @@ const menuItems: MenuItem[] = [
     icon: CreditCard,
     label: 'Transactions',
     href: '/transactions',
-  },
-  {
-    icon: Landmark,
-    label: 'Linked Accounts',
-    href: '/linked-accounts',
   },
 ]
 
@@ -129,7 +118,7 @@ export function AppSidebar({ activePage = '/overview', onPageChange, sidebarBg =
                     >
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
-                          isActive={activePage === item.href || activePage?.startsWith('/overview-v')}
+                          isActive={activePage === item.href}
                           tooltip={item.label}
                           className="w-full !px-5 !py-3 !h-auto !rounded-full transition-all duration-200 data-[active=true]:bg-[var(--color-neutral-g-50)] data-[active=true]:font-semibold hover:bg-[var(--color-neutral-g-50)] font-medium text-[var(--color-neutral-n-800)] text-[15px] leading-[28px] tracking-[-0.3px] font-['Poppins'] justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:!px-0 group-data-[collapsible=icon]:!size-12 group-data-[collapsible=icon]:!rounded-full group-data-[collapsible=icon]:!py-0"
                         >

@@ -49,7 +49,7 @@ const CHART_COLORS = {
 
 const chartConfig = {
   revenue: {
-    label: 'Revenue',
+    label: 'Income',
     color: CHART_COLORS.revenue,
   },
   costs: {
@@ -68,7 +68,7 @@ const chartConfig = {
  * Features:
  * - Welcome message at top
  * - Navigation arrows and time period toggle (Month/Year)
- * - Summary tiles in a row (Revenue, Costs, Estimated Profit)
+ * - Summary tiles in a row (Income, Costs, Estimated Profit)
  * - Business Performance chart alongside Top Spending list
  * - Action buttons for P&L Report and Insights
  */
@@ -205,11 +205,11 @@ export default function DashboardV2() {
 
         {/* Summary Tiles Row */}
         <div className="flex gap-4 px-6 pb-0">
-          {/* Revenue Card */}
+          {/* Income Card */}
           <MetricCardCompact
             icon={CreditCard}
             iconColor="#467c75"
-            label="Revenue"
+            label="Income"
             value={currentPeriod.revenue}
             valueColor="text-black"
             change={revenueChange}
@@ -659,7 +659,7 @@ function ProfitBarChartCompact({ viewType, quarterNumber, monthNumber }: ProfitB
                       style={{ backgroundColor: CHART_COLORS.revenue }}
                     />
                     <span className="text-[13px] text-[#c1c5c5] font-['Poppins']">
-                      Revenue
+                      Income
                     </span>
                   </div>
                   <span className="text-[13px] font-medium text-white font-['Poppins']">

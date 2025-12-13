@@ -3,43 +3,26 @@
  *
  * Features:
  * - Welcome message with Bips logo dots
- * - 4 metric cards (Revenue, Profit, Expenses, Account Balances)
- * - Mini line charts using shadcn chart components
- * - Chat bar is focused by default (handled by parent demo)
+ * - 4 metric cards (Profit, Income, Expenses, Cash On Hand)
+ * - Hover tooltips on bold text showing detailed breakdowns
+ * - Prompt buttons that trigger chat interactions
  */
 
-import { useMemo, useState } from 'react'
+import { useState, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import {
-  DollarSign,
   Wallet,
   CreditCard,
-  TrendingUp,
-  ArrowRight,
+  ArrowUpRight,
+  MessageCircle,
 } from 'lucide-react'
-import { LineChart, Line, Tooltip } from 'recharts'
-import { ChartContainer } from '@/components/ui/chart'
 import { AnimatedNumber } from '@/components/overview/AnimatedNumber'
+import { SmartTooltip } from '@/components/ui/smart-tooltip'
+import { IconButton } from '@/components/ui/icon-button'
 import {
   monthlyFinancialData,
   SIMULATED_MONTH,
 } from '@/lib/quarterly-data'
-
-/**
- * Generate mock trend data for mini line charts
- */
-function generateTrendData(baseValue: number, points: number = 12): { value: number }[] {
-  const data: { value: number }[] = []
-  let currentValue = baseValue * 0.7
-
-  for (let i = 0; i < points; i++) {
-    const trend = (i / points) * 0.4
-    const variance = (Math.random() - 0.5) * 0.15
-    currentValue = baseValue * (0.7 + trend + variance)
-    data.push({ value: Math.round(currentValue) })
-  }
-
-  return data
-}
 
 /**
  * Bips Logo Dots - Three circles in brand colors
@@ -52,7 +35,7 @@ function BipsLogoDots() {
       viewBox="0 0 37 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="mb-[var(--space-12)]"
+      className="mb-3"
     >
       <circle cx="11.7" cy="35.5" r="10.65" fill="var(--color-primary-p-500)" />
       <circle cx="26.8" cy="15.8" r="8.98" fill="var(--color-primary-p-500)" />
@@ -72,112 +55,281 @@ function getGreeting(): string {
 }
 
 /**
- * Custom tooltip for mini charts
+ * Hoverable text with tooltip
  */
-interface CustomTooltipProps {
-  active?: boolean
-  payload?: Array<{ value: number }>
-  color?: string
+interface HoverableTextProps {
+  children: React.ReactNode
+  tooltipContent: React.ReactNode
+  className?: string
 }
 
-function CustomChartTooltip({ active, payload }: CustomTooltipProps) {
-  if (!active || !payload || !payload.length) return null
+function HoverableText({ children, tooltipContent, className = '' }: HoverableTextProps) {
+  const [isHovered, setIsHovered] = useState(false)
+  const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null)
+  const triggerRef = useRef<HTMLSpanElement>(null)
+
+  const handleMouseEnter = () => {
+    if (triggerRef.current) {
+      setTriggerRect(triggerRef.current.getBoundingClientRect())
+    }
+    setIsHovered(true)
+  }
+
+  const handleMouseLeave = () => {
+    setIsHovered(false)
+    setTriggerRect(null)
+  }
 
   return (
-    <div className="bg-[var(--color-neutral-n-800)] px-[var(--space-8)] py-[var(--space-4)] rounded-[var(--radius-8)] shadow-lg">
-      <p className="text-[13px] font-medium font-['Poppins'] text-white">
-        ${payload[0].value.toLocaleString()}
-      </p>
+    <span
+      ref={triggerRef}
+      className={`relative inline cursor-default ${className}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {children}
+      <AnimatePresence>
+        {isHovered && (
+          <SmartTooltip triggerRect={triggerRect} variant="light">
+            {tooltipContent}
+          </SmartTooltip>
+        )}
+      </AnimatePresence>
+    </span>
+  )
+}
+
+/**
+ * Profit Segmented Bar - Horizontal bar showing costs vs profit breakdown
+ */
+interface ProfitSegmentedBarProps {
+  costsPercent: number
+  revenue: number
+  costs: number
+  profit: number
+}
+
+function ProfitSegmentedBar({ costsPercent, revenue, costs, profit }: ProfitSegmentedBarProps) {
+  const [isHovered, setIsHovered] = useState(false)
+  const totalSegments = 42
+  const costsSegments = Math.round((costsPercent / 100) * totalSegments)
+
+  return (
+    <div className="flex flex-col gap-2 w-full">
+      {/* Segmented bar with hover tooltip */}
+      <div
+        className="relative flex gap-[2px] h-7 w-full cursor-default"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {Array.from({ length: totalSegments }).map((_, i) => (
+          <div
+            key={i}
+            className="flex-1 rounded-[4px]"
+            style={{
+              backgroundColor: i < costsSegments ? '#b68b69' : 'var(--color-primary-p-500)',
+            }}
+          />
+        ))}
+        {/* Tooltip */}
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[100] rounded-lg bg-white/90 backdrop-blur-[3px] px-3 py-2 border border-[var(--color-neutral-g-100)] shadow-[0px_5px_13px_0px_rgba(0,0,0,0.04),0px_20px_24px_0px_rgba(0,0,0,0.06)] whitespace-nowrap"
+            >
+              <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">December 2025</div>
+              <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center gap-1">
+                    <div className="w-[9px] h-[9px] rounded-full bg-[#1e3834]" />
+                    <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Income</span>
+                  </div>
+                  <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${revenue.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center gap-1">
+                    <div className="w-[9px] h-[9px] rounded-full bg-[#b68b69]" />
+                    <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Costs</span>
+                  </div>
+                  <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${costs.toLocaleString()}</span>
+                </div>
+                <div className="h-px bg-[var(--color-neutral-g-100)] my-1" />
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center gap-1">
+                    <div className="w-[9px] h-[9px] rounded-full bg-[var(--color-primary-p-500)]" />
+                    <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Profit</span>
+                  </div>
+                  <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${profit.toLocaleString()}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      {/* Legend */}
+      <div className="flex items-center gap-5">
+        <div className="flex items-center gap-1.5">
+          <div className="w-[10px] h-[10px] rounded-full bg-[#b68b69]" />
+          <span className="text-sm font-normal tracking-[-0.28px] text-[var(--color-neutral-n-700)]">
+            Costs
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-[10px] h-[10px] rounded-full bg-[var(--color-primary-p-500)]" />
+          <span className="text-sm font-normal tracking-[-0.28px] text-[var(--color-neutral-n-700)]">
+            Profit
+          </span>
+        </div>
+      </div>
     </div>
   )
 }
 
 /**
- * Mini Line Chart for Revenue card
+ * Chase bank icon SVG
  */
-interface MiniLineChartProps {
-  data: { value: number }[]
-  color?: string
-}
-
-function MiniLineChart({ data, color = 'var(--color-primary-p-500)' }: MiniLineChartProps) {
-  const chartConfig = {
-    value: {
-      label: 'Value',
-      color: color,
-    },
-  }
-
+function ChaseIcon() {
   return (
-    <ChartContainer config={chartConfig} className="h-[60px] w-full">
-      <LineChart data={data} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-        <Tooltip
-          content={<CustomChartTooltip color={color} />}
-          cursor={false}
-        />
-        <Line
-          type="monotone"
-          dataKey="value"
-          stroke={color}
-          strokeWidth={2}
-          dot={false}
-          activeDot={{
-            r: 4,
-            fill: color,
-            stroke: 'var(--color-white)',
-            strokeWidth: 2,
-          }}
-        />
-      </LineChart>
-    </ChartContainer>
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect width="20" height="20" rx="10" fill="#117ACA" />
+      <path d="M5 10h10M10 5v10" stroke="white" strokeWidth="2.5" />
+    </svg>
   )
 }
 
 /**
- * Profit Bar - Horizontal bar showing breakdown of revenue into profit and costs
+ * Wells Fargo icon SVG
  */
-interface ProfitBarProps {
-  revenue: number
-  profit: number
-  costs: number
+function WellsFargoIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect width="20" height="20" rx="10" fill="#D71E28" />
+      <text x="10" y="14" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold" fontFamily="sans-serif">WF</text>
+    </svg>
+  )
 }
 
-function ProfitBar({ revenue, profit, costs }: ProfitBarProps) {
-  const [hoveredSegment, setHoveredSegment] = useState<'profit' | 'costs' | null>(null)
-  const profitPercent = (profit / revenue) * 100
-  const costsPercent = (costs / revenue) * 100
+/**
+ * Assets/Debts visualization for Cash On Hand card
+ */
+interface AssetsDebtsProps {
+  assets: number
+  debts: number
+  checkingBalance: number
+  savingsBalance1: number
+  savingsBalance2: number
+}
+
+function AssetsDebts({ assets, debts, checkingBalance, savingsBalance1, savingsBalance2 }: AssetsDebtsProps) {
+  const [assetsHovered, setAssetsHovered] = useState(false)
+  const [debtsHovered, setDebtsHovered] = useState(false)
 
   return (
-    <div className="relative">
-      <div className="flex h-[27px] w-full rounded-[var(--radius-8)] border border-[var(--color-neutral-g-100)] overflow-hidden">
-        <div
-          className="bg-[var(--color-primary-p-500)] h-full transition-all duration-200 cursor-pointer hover:opacity-80"
-          style={{ width: `${profitPercent}%` }}
-          onMouseEnter={() => setHoveredSegment('profit')}
-          onMouseLeave={() => setHoveredSegment(null)}
-        />
-        <div
-          className="bg-[#b68b69] h-full transition-all duration-200 cursor-pointer hover:opacity-80"
-          style={{ width: `${costsPercent}%` }}
-          onMouseEnter={() => setHoveredSegment('costs')}
-          onMouseLeave={() => setHoveredSegment(null)}
-        />
+    <div className="flex items-center gap-5 w-full">
+      {/* Assets */}
+      <div
+        className="relative flex-1 flex flex-col gap-[2px] cursor-default"
+        onMouseEnter={() => setAssetsHovered(true)}
+        onMouseLeave={() => setAssetsHovered(false)}
+      >
+        <span className="text-[15px] font-normal tracking-[-0.3px] text-[var(--color-neutral-n-700)] h-5">
+          Assets
+        </span>
+        <div className="flex items-center gap-2">
+          {/* Stacked bank icons */}
+          <div className="flex items-start pr-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-5 h-5 rounded-full bg-white border border-white -ml-2 first:ml-0 overflow-hidden flex items-center justify-center"
+              >
+                <ChaseIcon />
+              </div>
+            ))}
+          </div>
+          <span className="text-base font-medium tracking-[-0.32px] text-[var(--color-primary-p-800)]">
+            ${assets.toLocaleString()}
+          </span>
+        </div>
+        {/* Assets Tooltip */}
+        <AnimatePresence>
+          {assetsHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute bottom-full left-0 mb-2 z-[100] rounded-lg bg-white/90 backdrop-blur-[3px] px-3 py-2 border border-[var(--color-neutral-g-100)] shadow-[0px_5px_13px_0px_rgba(0,0,0,0.04),0px_20px_24px_0px_rgba(0,0,0,0.06)] whitespace-nowrap"
+            >
+              <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Checking / Savings</div>
+              <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Chase ***1145</span>
+                  <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${checkingBalance.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Chase ***2224</span>
+                  <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${savingsBalance1.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Chase ***2224</span>
+                  <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${savingsBalance2.toLocaleString()}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Tooltip */}
-      {hoveredSegment && (
-        <div
-          className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[var(--color-neutral-n-800)] px-[var(--space-8)] py-[var(--space-4)] rounded-[var(--radius-8)] shadow-lg whitespace-nowrap z-10"
-        >
-          <p className="text-[13px] font-medium font-['Poppins'] text-white">
-            {hoveredSegment === 'profit' ? (
-              <>Profit: ${profit.toLocaleString()} ({Math.round(profitPercent)}% of revenue)</>
-            ) : (
-              <>Costs: ${costs.toLocaleString()} ({Math.round(costsPercent)}% of revenue)</>
-            )}
-          </p>
+      {/* Divider */}
+      <div className="w-px h-[50px] bg-[var(--color-neutral-g-100)]" />
+
+      {/* Debts */}
+      <div
+        className="relative flex-1 flex flex-col gap-[2px] cursor-default"
+        onMouseEnter={() => setDebtsHovered(true)}
+        onMouseLeave={() => setDebtsHovered(false)}
+      >
+        <span className="text-[15px] font-normal tracking-[-0.3px] text-[var(--color-neutral-n-700)] h-5">
+          Debts
+        </span>
+        <div className="flex items-center gap-2">
+          {/* Wells Fargo icon */}
+          <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center">
+            <WellsFargoIcon />
+          </div>
+          <span className="text-base font-medium tracking-[-0.32px] text-[#ac4545]">
+            -${Math.abs(debts).toLocaleString()}
+          </span>
         </div>
-      )}
+        {/* Debts Tooltip */}
+        <AnimatePresence>
+          {debtsHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="absolute bottom-full right-0 mb-2 z-[100] rounded-lg bg-white/90 backdrop-blur-[3px] px-3 py-2 border border-[var(--color-neutral-g-100)] shadow-[0px_5px_13px_0px_rgba(0,0,0,0.04),0px_20px_24px_0px_rgba(0,0,0,0.06)] whitespace-nowrap"
+            >
+              <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Credit Cards</div>
+              <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Wells Fargo ***4455</span>
+                  <span className="text-[#ac4545] text-[15px] font-medium font-['Poppins']">-${Math.abs(debts).toLocaleString()}</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }
@@ -186,186 +338,420 @@ function ProfitBar({ revenue, profit, costs }: ProfitBarProps) {
  * Metric Card - Individual card for financial metrics
  */
 interface MetricCardProps {
-  icon: typeof DollarSign
-  iconColor?: string
+  icon: typeof Wallet
   label: string
+  actionLabel: string
   value: number
   valueColor?: string
   insight: React.ReactNode
   visualization?: React.ReactNode
-  footerLabel: string
+  prompt: string
+  onPromptClick?: (prompt: string) => void
+  onActionClick?: () => void
+  index?: number
+  shouldStagger?: boolean
 }
 
 function MetricCard({
   icon: Icon,
-  iconColor = 'var(--color-neutral-n-600)',
   label,
+  actionLabel,
   value,
-  valueColor = 'var(--color-primary-p-800, #1e3834)',
+  valueColor = 'var(--color-primary-p-800)',
   insight,
   visualization,
-  footerLabel,
+  prompt,
+  onPromptClick,
+  onActionClick,
+  index = 0,
+  shouldStagger = false,
 }: MetricCardProps) {
-  return (
-    <div className="flex flex-col rounded-[var(--radius-12)] overflow-hidden group cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)]">
+  const [actionHovered, setActionHovered] = useState(false)
+  const [showTooltip, setShowTooltip] = useState(false)
+  const [buttonRect, setButtonRect] = useState<DOMRect | null>(null)
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  const handleActionMouseEnter = () => {
+    setActionHovered(true)
+    tooltipTimeoutRef.current = setTimeout(() => {
+      if (buttonRef.current) {
+        setButtonRect(buttonRef.current.getBoundingClientRect())
+      }
+      setShowTooltip(true)
+    }, 400)
+  }
+
+  const handleActionMouseLeave = () => {
+    setActionHovered(false)
+    setShowTooltip(false)
+    setButtonRect(null)
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current)
+      tooltipTimeoutRef.current = null
+    }
+  }
+
+  const cardContent = (
+    <div className="flex flex-col rounded-xl border border-[var(--color-neutral-g-200)] overflow-hidden h-full">
       {/* Main Card Content */}
-      <div className="flex-1 flex flex-col bg-[var(--color-white)] border border-[var(--color-neutral-g-100)] rounded-[var(--radius-12)] p-[var(--space-12)] pb-[var(--space-16)] transition-colors duration-200 group-hover:border-[var(--color-neutral-g-200)]">
-        {/* Icon + Label */}
-        <div className="flex items-center gap-[var(--space-4)] mb-[var(--space-4)]">
-          <Icon className="w-4 h-4" style={{ color: iconColor }} />
-          <span
-            className="text-[15px] font-normal font-['Poppins'] leading-7 tracking-[-0.3px]"
-            style={{ color: 'var(--color-neutral-n-600)' }}
-          >
+      <div className="relative flex-1 flex flex-col bg-white border border-[var(--color-neutral-g-100)] rounded-xl px-5 pt-3 pb-4 -mb-[10px] z-[2]">
+        {/* Header: Icon + Label */}
+        <div className="flex items-center gap-1 mb-1">
+          <Icon className="w-4 h-4 text-[var(--color-neutral-n-700)]" />
+          <span className="text-[15px] font-normal tracking-[-0.3px] text-[var(--color-neutral-n-700)] leading-7">
             {label}
           </span>
         </div>
 
-        {/* Value */}
-        <div style={{ color: valueColor }}>
-          <AnimatedNumber
-            value={value}
-            format="full"
-            className="text-[26px] font-medium font-['Poppins'] leading-10 tracking-[-0.52px] mb-[var(--space-4)]"
-          />
+        {/* Action Button - Positioned absolutely */}
+        <div
+          className="absolute top-4 right-4"
+          onMouseEnter={handleActionMouseEnter}
+          onMouseLeave={handleActionMouseLeave}
+        >
+          <IconButton
+            ref={buttonRef}
+            onClick={onActionClick}
+            size="md"
+          >
+            <ArrowUpRight className="w-5 h-5" />
+          </IconButton>
+          <AnimatePresence>
+            {showTooltip && buttonRect && (
+              <SmartTooltip triggerRect={buttonRect} variant="dark">
+                <span className="text-[var(--color-white)] text-[14px] font-normal font-['Poppins']">{actionLabel}</span>
+              </SmartTooltip>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Value - No animation */}
+        <div className="py-3">
+          <div style={{ color: valueColor }}>
+            <AnimatedNumber
+              value={value}
+              format="full"
+              className="text-4xl font-medium tracking-[-0.72px] leading-[44px]"
+              animate={false}
+            />
+          </div>
         </div>
 
         {/* Insight Text */}
-        <p className="text-[16px] font-normal font-['Poppins'] leading-7 tracking-[-0.32px] text-[var(--color-neutral-n-800)] mb-[var(--space-8)]">
+        <p className="text-base font-normal leading-7 tracking-[-0.32px] text-[var(--color-neutral-n-700)] mb-2">
           {insight}
         </p>
 
         {/* Visualization (optional) */}
         {visualization && (
-          <div className="mt-auto pt-[var(--space-8)] w-full">
+          <div className="mt-auto pt-2 w-full">
             {visualization}
           </div>
         )}
       </div>
 
-      {/* Footer Link */}
-      <div className="bg-[var(--color-neutral-g-50)] px-[13px] py-[var(--space-8)] -mt-[10px] pt-[var(--space-16)]">
-        <button className="flex items-center gap-[var(--space-12)] text-[13px] font-normal font-['Poppins'] leading-5 tracking-[-0.26px] text-[var(--color-neutral-n-700)] group-hover:text-[var(--color-primary-p-500)] transition-colors">
-          {footerLabel}
-          <ArrowRight className="w-6 h-6 transition-transform duration-200 group-hover:translate-x-1" />
-        </button>
-      </div>
+      {/* Prompt Footer */}
+      <button
+        onClick={() => onPromptClick?.(prompt)}
+        className="bg-[#f6f6f6] border border-white rounded-b-xl px-3 py-3 pt-5 z-[1] flex items-center gap-1 hover:bg-[#f0f0f0] transition-colors cursor-pointer text-left"
+      >
+        <MessageCircle className="w-4 h-4 text-[#393939] flex-shrink-0" />
+        <span className="text-sm font-normal tracking-[-0.28px] text-[#393939]">
+          {prompt}
+        </span>
+      </button>
     </div>
   )
+
+  // If stagger animation is enabled, wrap in motion.div
+  if (shouldStagger) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: 0.4,
+          delay: index * 0.1,
+          ease: [0.25, 0.46, 0.45, 0.94],
+        }}
+      >
+        {cardContent}
+      </motion.div>
+    )
+  }
+
+  return cardContent
 }
+
+/**
+ * Props for DashboardV4
+ */
+interface DashboardV4Props {
+  onStartChat?: (prompt: string) => void
+  onViewChart?: (tab: 'profit' | 'revenue' | 'costs' | 'cashOnHand') => void
+}
+
+// Module-level flag to track if animation has been shown
+// Resets on page refresh, persists during navigation
+let hasAnimatedThisSession = false
 
 /**
  * Main DashboardV4 Component
  */
-export default function DashboardV4() {
+export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Props) {
   const userName = 'Preston'
 
-  // Get current period data
+  // Track if this is the first visit in this session
+  // Using lazy initializer to check synchronously before first render
+  const [shouldStagger] = useState(() => {
+    if (!hasAnimatedThisSession) {
+      hasAnimatedThisSession = true
+      return true
+    }
+    return false
+  })
+
+  // Get current month data from quarterly-data
   const currentPeriod = monthlyFinancialData[SIMULATED_MONTH]
-  const revenue = currentPeriod?.revenue ?? 26820
-  const costs = currentPeriod?.costs ?? 4000
+  const revenue = currentPeriod?.revenue ?? 10000
+  const costs = currentPeriod?.costs ?? 6000
   const profit = revenue - costs
-  const accountBalance = 26820 // Mock value
+  const cashOnHand = currentPeriod?.cashOnHand ?? 16500
 
-  // Generate trend data for charts
-  const revenueTrendData = useMemo(() => generateTrendData(revenue), [revenue])
+  // Mock data for detailed breakdowns
+  const stripeRevenue = Math.round(revenue * 0.88) // 88% from Stripe
+  const softwareCosts = Math.round(costs * 0.35)
+  const insuranceCosts = Math.round(costs * 0.25)
+  const rentCosts = Math.round(costs * 0.20)
 
-  // Calculate profit margin percentage
-  const profitMargin = Math.round((profit / revenue) * 100)
+  // Asset breakdown (mock)
+  const assets = Math.round(cashOnHand * 0.88)
+  const debts = Math.round(cashOnHand * 0.12)
+
+  // Account breakdown for tooltip
+  const checkingBalance = Math.round(assets * 0.69)
+  const savingsBalance1 = Math.round(assets * 0.28)
+  const savingsBalance2 = Math.round(assets * 0.03)
+
+  // Calculate percentages
+  const profitPercent = Math.round((profit / revenue) * 100)
+  const costsPercent = 100 - profitPercent
+
+  // Calculate runway (months of expenses covered by cash)
+  const runwayMonths = (cashOnHand / costs).toFixed(1)
+
+  // Handle prompt click
+  const handlePromptClick = useCallback((prompt: string) => {
+    if (onStartChat) {
+      onStartChat(prompt)
+    } else {
+      console.log('Prompt clicked:', prompt)
+    }
+  }, [onStartChat])
 
   return (
-    <div className="w-full max-w-[1800px] mx-auto">
-      {/* Welcome Section - Left aligned */}
-      <div className="mb-[var(--space-24)]">
+    <div className="w-full">
+      {/* Welcome Section */}
+      <div className="mb-8">
         <BipsLogoDots />
 
-        <h1 className="text-[32px] font-normal font-['Poppins'] leading-[61px] tracking-[-0.64px] text-black mb-0">
+        <h1 className="text-[50px] font-normal leading-[61px] tracking-[-1px] text-black mb-[2px]">
           {getGreeting()}, {userName}.
         </h1>
 
-        <p className="text-[16px] font-normal font-['Poppins'] leading-7 tracking-[-0.32px] text-[var(--color-neutral-n-600)]">
-          Here are some daily insights to get you started.
+        <p className="text-lg leading-8 tracking-[-0.36px] text-[#8d9291]" style={{ fontWeight: 400 }}>
+          December is looking great so far! Here's what I am seeing.
         </p>
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-[var(--color-neutral-g-100)] mb-[var(--space-24)]" />
-
-      {/* Section Label - Left aligned */}
-      <div className="flex items-center gap-[var(--space-4)] mb-[var(--space-16)]">
-        <TrendingUp className="w-4 h-4 text-[var(--color-neutral-n-600)]" />
-        <span className="text-[14px] font-normal font-['Poppins'] leading-5 tracking-[-0.28px] text-[var(--color-neutral-n-600)]">
-          Pied Piper at a glance
-        </span>
-      </div>
+      <div className="h-px bg-[var(--color-neutral-g-100)] mb-8" />
 
       {/* Metric Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[var(--space-20)]">
-        {/* Revenue Card */}
-        <MetricCard
-          icon={DollarSign}
-          label="Revenue"
-          value={revenue}
-          valueColor="var(--color-primary-p-800, #1e3834)"
-          insight={
-            <>
-              Your revenue is looking steady. It is already up{' '}
-              <span className="font-bold text-[var(--color-primary-p-500)]">12%</span>{' '}
-              from last month.
-            </>
-          }
-          visualization={<MiniLineChart data={revenueTrendData} />}
-          footerLabel="View Chart"
-        />
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         {/* Profit Card */}
         <MetricCard
           icon={Wallet}
           label="Profit"
+          actionLabel="View Chart"
           value={profit}
           valueColor="var(--color-primary-p-500)"
           insight={
             <>
-              Your profit margin is looking healthy at{' '}
-              <span className="font-bold text-[var(--color-primary-p-500)]">{profitMargin}%</span>{' '}
-              so far this month.
+              Your profit margin is healthy at {profitPercent}% so far this month.
             </>
           }
-          visualization={<ProfitBar revenue={revenue} profit={profit} costs={costs} />}
-          footerLabel="View Chart"
+          visualization={
+            <ProfitSegmentedBar
+              costsPercent={costsPercent}
+              revenue={revenue}
+              costs={costs}
+              profit={profit}
+            />
+          }
+          prompt="How can I increase my profit margins?"
+          onPromptClick={handlePromptClick}
+          onActionClick={() => onViewChart?.('profit')}
+          index={0}
+          shouldStagger={shouldStagger}
         />
 
-        {/* Expenses Card */}
+        {/* Income Card */}
+        <MetricCard
+          icon={Wallet}
+          label="Income"
+          actionLabel="View Chart"
+          value={revenue}
+          valueColor="var(--color-primary-p-800)"
+          insight={
+            <>
+              Most of your revenue came from{' '}
+              <HoverableText
+                className="font-bold text-[var(--color-neutral-n-800)]"
+                tooltipContent={
+                  <>
+                    <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Stripe</div>
+                    <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Total Earned</span>
+                      <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${stripeRevenue.toLocaleString()}</span>
+                    </div>
+                  </>
+                }
+              >
+                Stripe
+              </HoverableText>{' '}
+              payouts.
+            </>
+          }
+          prompt="Break it down for me"
+          onPromptClick={handlePromptClick}
+          onActionClick={() => onViewChart?.('revenue')}
+          index={1}
+          shouldStagger={shouldStagger}
+        />
+
+        {/* Costs Card */}
         <MetricCard
           icon={CreditCard}
-          iconColor="var(--color-neutral-n-600)"
-          label="Expenses"
+          label="Costs"
+          actionLabel="View Breakdown"
           value={costs}
           valueColor="#b68b69"
           insight={
             <>
               Your biggest expenses this month are{' '}
-              <span className="font-bold text-[#b68b69]">Software</span>,{' '}
-              <span className="font-bold text-[#b68b69]">Insurance</span>, and{' '}
-              <span className="font-bold text-[#b68b69]">Rent</span>.
+              <HoverableText
+                className="font-bold text-[#b68b69]"
+                tooltipContent={
+                  <>
+                    <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Software</div>
+                    <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Total Spent</span>
+                      <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${softwareCosts.toLocaleString()}</span>
+                    </div>
+                  </>
+                }
+              >
+                Software
+              </HoverableText>
+              ,{' '}
+              <HoverableText
+                className="font-bold text-[#b68b69]"
+                tooltipContent={
+                  <>
+                    <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Insurance</div>
+                    <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Total Spent</span>
+                      <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${insuranceCosts.toLocaleString()}</span>
+                    </div>
+                  </>
+                }
+              >
+                Insurance
+              </HoverableText>
+              , and{' '}
+              <HoverableText
+                className="font-bold text-[#b68b69]"
+                tooltipContent={
+                  <>
+                    <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Rent</div>
+                    <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Total Spent</span>
+                      <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${rentCosts.toLocaleString()}</span>
+                    </div>
+                  </>
+                }
+              >
+                Rent
+              </HoverableText>
+              .
             </>
           }
-          footerLabel="View All Categories"
+          prompt="How could I optimize my expenses?"
+          onPromptClick={handlePromptClick}
+          onActionClick={() => onViewChart?.('costs')}
+          index={2}
+          shouldStagger={shouldStagger}
         />
 
-        {/* Account Balances Card */}
+        {/* Cash On Hand Card */}
         <MetricCard
-          icon={CreditCard}
-          label="Account Balances"
-          value={accountBalance}
-          valueColor="var(--color-primary-p-800, #1e3834)"
+          icon={Wallet}
+          label="Cash On Hand"
+          actionLabel="View Chart"
+          value={cashOnHand}
+          valueColor="var(--color-primary-p-800)"
           insight={
             <>
-              Your account balance is down <span className="font-bold">5%</span>{' '}
-              across all of your accounts so far this month.
+              Your current cash would cover about{' '}
+              <HoverableText
+                className="font-bold text-[var(--color-neutral-n-800)]"
+                tooltipContent={
+                  <>
+                    <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Estimated Runway</div>
+                    <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Current Balance</span>
+                        <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${cashOnHand.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Avg. Monthly Costs</span>
+                        <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">${costs.toLocaleString()}</span>
+                      </div>
+                      <div className="h-px bg-[var(--color-neutral-g-100)] my-1" />
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Estimated Runway</span>
+                        <span className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">{runwayMonths} months</span>
+                      </div>
+                    </div>
+                  </>
+                }
+              >
+                {runwayMonths}
+              </HoverableText>{' '}
+              months of expenses.
             </>
           }
-          footerLabel="View Accounts"
+          visualization={
+            <AssetsDebts
+              assets={assets}
+              debts={debts}
+              checkingBalance={checkingBalance}
+              savingsBalance1={savingsBalance1}
+              savingsBalance2={savingsBalance2}
+            />
+          }
+          prompt="How much should I be saving?"
+          onPromptClick={handlePromptClick}
+          onActionClick={() => onViewChart?.('cashOnHand')}
+          index={3}
+          shouldStagger={shouldStagger}
         />
       </div>
     </div>
