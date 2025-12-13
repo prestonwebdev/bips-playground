@@ -49,7 +49,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Eye,
   EyeOff,
   Check,
   X,

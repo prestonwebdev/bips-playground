@@ -7,7 +7,7 @@
  * - Three cards below: Assistant, Spending, Invoices
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 
 /**
  * Calculate nice round tick values for Y-axis
@@ -53,8 +53,6 @@ import {
   ReferenceLine,
   LabelList,
   CartesianGrid,
-  LineChart,
-  Line,
   Area,
   AreaChart,
 } from 'recharts'
@@ -100,7 +98,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Card } from '@/components/ui/card'
 import { ScrollFadeEffect } from '@/components/ui/scroll-fade-effect'
 
 /**
@@ -651,7 +648,7 @@ interface BreakdownListProps {
   type: 'revenue' | 'costs'
 }
 
-function BreakdownList({ items, type }: BreakdownListProps) {
+function BreakdownList({ items }: BreakdownListProps) {
   // Sort items by amount (descending)
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => b.amount - a.amount)
@@ -1155,205 +1152,6 @@ function CashOnHandChart({ viewType, currentIndex, height = 'h-[350px]' }: CashO
     </ChartContainer>
   )
 }
-
-/**
- * Cash on Hand Line Chart Component - Shows cash over time with account breakdown
- * @deprecated Use CashOnHandChart and AccountList instead
- */
-interface AccountBalanceChartProps {
-  accounts: AccountBalance[]
-  viewType: 'month' | 'year'
-  currentIndex: number
-}
-
-// Generate historical cash data for line chart based on period
-function generateCashHistoryData(viewType: 'month' | 'year', periodIndex: number) {
-  const shortMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-  // Base values that grow over time
-  const baseChecking = 10000
-  const baseSavings = 5000
-  const baseCredit = 1500
-
-  const monthlyGrowth = { checking: 450, savings: 280, credit: 120 }
-
-  // Seeded random for variance
-  const seededRandom = (seed: number) => {
-    const x = Math.sin(seed * 9999) * 10000
-    return x - Math.floor(x)
-  }
-
-  if (viewType === 'month') {
-    // For month view, show the 6 months leading up to and including the selected month
-    const startMonth = Math.max(0, periodIndex - 5)
-    const months = shortMonthNames.slice(startMonth, periodIndex + 1)
-
-    return months.map((month, idx) => {
-      const actualMonthIdx = startMonth + idx
-      const variance = seededRandom(actualMonthIdx * 10) * 0.05 - 0.025
-      const checking = Math.round((baseChecking + monthlyGrowth.checking * (actualMonthIdx + 1)) * (1 + variance))
-      const savings = Math.round((baseSavings + monthlyGrowth.savings * (actualMonthIdx + 1)) * (1 + variance))
-      const credit = Math.round((baseCredit + monthlyGrowth.credit * (actualMonthIdx + 1)) * (1 + variance))
-
-      return {
-        month,
-        total: checking + savings + credit,
-        checking,
-        savings,
-        credit,
-      }
-    })
-  } else {
-    // For year view, show quarterly data for the selected year
-    const quarters = ['Q1', 'Q2', 'Q3', 'Q4']
-    const yearOffset = periodIndex * 12
-
-    return quarters.map((quarter, idx) => {
-      const monthsIntoYear = (idx + 1) * 3
-      const totalMonths = yearOffset + monthsIntoYear
-      const variance = seededRandom(totalMonths * 10) * 0.05 - 0.025
-      const checking = Math.round((baseChecking + monthlyGrowth.checking * totalMonths) * (1 + variance))
-      const savings = Math.round((baseSavings + monthlyGrowth.savings * totalMonths) * (1 + variance))
-      const credit = Math.round((baseCredit + monthlyGrowth.credit * totalMonths) * (1 + variance))
-
-      return {
-        month: quarter,
-        total: checking + savings + credit,
-        checking,
-        savings,
-        credit,
-      }
-    })
-  }
-}
-
-function AccountBalanceChart({ accounts, viewType, currentIndex }: AccountBalanceChartProps) {
-  const totalBalance = accounts.reduce((sum, acc) => sum + acc.amount, 0)
-  const cashHistoryData = useMemo(() => generateCashHistoryData(viewType, currentIndex), [viewType, currentIndex])
-
-  const chartConfig = {
-    total: {
-      label: 'Total Cash',
-      color: 'var(--color-primary-p-500)',
-    },
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Total Value */}
-      <div>
-        <span className="text-2xl font-medium text-[var(--color-neutral-n-800)] tracking-tight">
-          ${totalBalance.toLocaleString()}
-        </span>
-      </div>
-
-      {/* Line Chart */}
-      <ChartContainer config={chartConfig} className="h-[180px] w-full">
-        <AreaChart
-          data={cashHistoryData}
-          margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
-        >
-          <defs>
-            <linearGradient id="cashGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-primary-p-500)" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="var(--color-primary-p-500)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis
-            dataKey="month"
-            tickLine={false}
-            axisLine={false}
-            tick={{ fontSize: 11, fontFamily: 'Poppins', fill: '#8d9291' }}
-          />
-          <YAxis hide domain={['dataMin - 1000', 'dataMax + 1000']} />
-          <CartesianGrid
-            horizontal={true}
-            vertical={false}
-            stroke="var(--color-neutral-g-100)"
-          />
-          <Tooltip
-            content={({ active, payload }) => {
-              if (!active || !payload || payload.length === 0) return null
-              const data = payload[0].payload
-
-              return (
-                <div className="rounded-lg bg-white/90 backdrop-blur-[3px] border border-[var(--color-neutral-g-100)] px-3 py-2 shadow-[0px_5px_13px_0px_rgba(0,0,0,0.04),0px_20px_24px_0px_rgba(0,0,0,0.06)] min-w-[180px]">
-                  <p className="mb-2 text-sm font-medium text-[var(--color-neutral-n-800)]">
-                    {data.month} 2024
-                  </p>
-                  {/* Account breakdown */}
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-[var(--color-primary-p-500)]" />
-                        <span className="text-sm text-[var(--color-neutral-n-600)]">Business Checking</span>
-                      </div>
-                      <span className="text-sm font-medium text-[var(--color-neutral-n-800)]">
-                        ${data.checking?.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-[var(--color-primary-p-700)]" />
-                        <span className="text-sm text-[var(--color-neutral-n-600)]">Business Savings</span>
-                      </div>
-                      <span className="text-sm font-medium text-[var(--color-neutral-n-800)]">
-                        ${data.savings?.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-[var(--color-primary-p-300)]" />
-                        <span className="text-sm text-[var(--color-neutral-n-600)]">Credit Line</span>
-                      </div>
-                      <span className="text-sm font-medium text-[var(--color-neutral-n-800)]">
-                        ${data.credit?.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 pt-1 mt-1 border-t border-[var(--color-neutral-g-100)]">
-                      <span className="text-sm font-medium text-[var(--color-neutral-n-700)]">Total</span>
-                      <span className="text-sm font-semibold text-[var(--color-neutral-n-800)]">
-                        ${data.total?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="total"
-            stroke="var(--color-primary-p-500)"
-            strokeWidth={2}
-            fill="url(#cashGradient)"
-          />
-        </AreaChart>
-      </ChartContainer>
-
-      {/* Account List */}
-      <div className="flex flex-col gap-3 pt-2 border-t border-[var(--color-neutral-g-100)]">
-        {accounts.map((account) => (
-          <div key={account.id} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: account.color }}
-              />
-              <span className="text-sm text-[var(--color-neutral-n-700)]">
-                {account.name}
-              </span>
-            </div>
-            <span className="text-sm font-medium text-[var(--color-neutral-n-800)]">
-              ${account.amount.toLocaleString()}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 /**
  * Income Area Chart
  */

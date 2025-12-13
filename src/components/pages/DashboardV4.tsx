@@ -366,14 +366,12 @@ function MetricCard({
   index = 0,
   shouldStagger = false,
 }: MetricCardProps) {
-  const [actionHovered, setActionHovered] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [buttonRect, setButtonRect] = useState<DOMRect | null>(null)
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   const handleActionMouseEnter = () => {
-    setActionHovered(true)
     tooltipTimeoutRef.current = setTimeout(() => {
       if (buttonRef.current) {
         setButtonRect(buttonRef.current.getBoundingClientRect())
@@ -383,7 +381,6 @@ function MetricCard({
   }
 
   const handleActionMouseLeave = () => {
-    setActionHovered(false)
     setShowTooltip(false)
     setButtonRect(null)
     if (tooltipTimeoutRef.current) {
