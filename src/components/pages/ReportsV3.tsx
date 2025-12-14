@@ -42,7 +42,7 @@ import {
   CreditCard,
   Landmark,
   FileText,
-  Copy,
+  Wallet,
   Megaphone,
   Monitor,
   Users,
@@ -408,7 +408,7 @@ function SpendingCategoriesSection({ costs }: { costs: number }) {
 
   const categoriesWithSpending = spendingCategories.filter(c => c.amount > 0)
   const categoriesWithoutSpending = spendingCategories.filter(c => c.amount === 0)
-  const maxAmount = Math.max(...categoriesWithSpending.map(c => c.amount), 1)
+  const totalSpending = categoriesWithSpending.reduce((sum, c) => sum + c.amount, 0)
 
   return (
     <div className="h-full">
@@ -427,7 +427,7 @@ function SpendingCategoriesSection({ costs }: { costs: number }) {
         {/* Categories with spending (always visible) */}
         {categoriesWithSpending.map((category) => {
           const Icon = category.icon
-          const barWidth = maxAmount > 0 ? (category.amount / maxAmount) * 100 : 0
+          const barWidth = totalSpending > 0 ? (category.amount / totalSpending) * 100 : 0
 
           return (
             <div key={category.id} className="flex items-center gap-2 whitespace-nowrap">
@@ -1093,10 +1093,11 @@ export default function ReportsV3({ initialTab, onInitialTabUsed, onStartChat }:
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Fixed Header */}
-      <div className="shrink-0 px-12 pt-7 pb-5 bg-white">
-        <div className="flex items-center justify-between">
-          {/* Left Side: Combined Period Selector */}
-          <div className="flex items-center gap-4">
+      <div className="shrink-0 px-12 pt-6 pb-8 bg-white">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="flex items-center justify-between">
+            {/* Left Side: Combined Period Selector */}
+            <div className="flex items-center gap-4">
             {/* Combined pill with Month/Year toggle, divider, and date dropdown */}
             <div className="flex items-center gap-1 p-1 bg-white border border-[var(--color-neutral-g-100)] rounded-full shadow-[0px_2px_4px_0px_rgba(70,81,83,0.01),0px_7px_7px_0px_rgba(70,81,83,0.01)]">
               {/* Month/Year Toggle */}
@@ -1139,8 +1140,8 @@ export default function ReportsV3({ initialTab, onInitialTabUsed, onStartChat }:
 
           {/* Right Side: Action buttons */}
           <div className="flex items-center gap-3">
-            {/* Monthly Summary - only shows on month view */}
-            {viewType === 'month' && (
+            {/* Monthly Summary - only shows on past months, not current month */}
+            {viewType === 'month' && currentIndex < SIMULATED_MONTH && (
               <button
                 onClick={() => {
                   const summaryPrompt = `Give me a summary of my finances for ${MONTH_NAMES[currentIndex]} 2025. Here's what I'm seeing:
@@ -1167,6 +1168,7 @@ Please provide insights and recommendations based on this data.`
               View P&L Report
             </button>
           </div>
+          </div>
         </div>
       </div>
 
@@ -1185,7 +1187,7 @@ Please provide insights and recommendations based on this data.`
                       value="profit"
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
                     >
-                      <Copy className="w-4 h-4" />
+                      <Wallet className="w-4 h-4" />
                       Profit & Loss
                     </TabsTrigger>
                     <TabsTrigger
@@ -1206,7 +1208,7 @@ Please provide insights and recommendations based on this data.`
                       value="cash"
                       className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
                     >
-                      <Landmark className="w-4 h-4" />
+                      <Banknote className="w-4 h-4" />
                       Cash On Hand
                     </TabsTrigger>
                   </TabsList>
@@ -1217,7 +1219,7 @@ Please provide insights and recommendations based on this data.`
                   {/* Label above the number */}
                   <p className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mb-1">
                     {activeTab === 'profit' && 'Total Profit'}
-                    {activeTab === 'revenue' && 'Total Revenue'}
+                    {activeTab === 'revenue' && 'Total Income'}
                     {activeTab === 'costs' && 'Total Cost'}
                     {activeTab === 'cash' && 'Cash on Hand'}
                   </p>

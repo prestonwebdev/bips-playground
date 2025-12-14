@@ -622,25 +622,26 @@ export function ProfitBarChart({ viewType, quarterNumber, monthNumber, className
 
             const revenue = dataPoint.revenue ?? 0
             const costs = dataPoint.costs ?? 0
+            const profitMargin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0
 
             return (
               <div className="rounded-lg bg-white/90 backdrop-blur-[3px] border border-[var(--color-neutral-g-100)] px-3 py-2 shadow-[0px_5px_13px_0px_rgba(0,0,0,0.04),0px_20px_24px_0px_rgba(0,0,0,0.06)] min-w-[180px]">
                 <p className="mb-2 text-[15px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins']">
                   {dataPoint.dateRange}
                 </p>
-                {/* Income */}
+                {/* Profit/Loss */}
                 <div className="flex items-center justify-between gap-4 mb-1">
                   <div className="flex items-center gap-2">
                     <div
                       className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: CHART_COLORS.revenue }}
+                      style={{ backgroundColor: profit > 0 ? CHART_COLORS.profit : CHART_COLORS.loss }}
                     />
                     <span className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins']">
-                      Income
+                      {getProfitLabel(profit, isPast)}
                     </span>
                   </div>
                   <span className="text-[14px] font-semibold text-[var(--color-neutral-n-800)] font-['Poppins']">
-                    ${revenue.toLocaleString()}
+                    ${Math.abs(profit).toLocaleString()}
                   </span>
                 </div>
                 {/* Costs */}
@@ -658,19 +659,13 @@ export function ProfitBarChart({ viewType, quarterNumber, monthNumber, className
                     ${costs.toLocaleString()}
                   </span>
                 </div>
-                {/* Profit/Loss */}
+                {/* Profit Margin */}
                 <div className="flex items-center justify-between gap-4 pt-1 border-t border-[var(--color-neutral-g-100)]">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: profit > 0 ? CHART_COLORS.profit : CHART_COLORS.loss }}
-                    />
-                    <span className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins']">
-                      {getProfitLabel(profit, isPast)}
-                    </span>
-                  </div>
-                  <span className="text-[14px] font-semibold text-[var(--color-neutral-n-800)] font-['Poppins']">
-                    ${Math.abs(profit).toLocaleString()}
+                  <span className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins']">
+                    Profit Margin
+                  </span>
+                  <span className={`text-[14px] font-semibold font-['Poppins'] ${profit >= 0 ? 'text-[var(--color-primary-p-500)]' : 'text-[#b68b69]'}`}>
+                    {profit >= 0 ? '' : '-'}{Math.abs(profitMargin)}%
                   </span>
                 </div>
               </div>

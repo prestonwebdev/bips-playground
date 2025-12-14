@@ -70,24 +70,34 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   DollarSign,
   CreditCard,
   Landmark,
   FileText,
-  Copy,
+  Wallet,
   UtensilsCrossed,
+  Banknote,
   Megaphone,
   Monitor,
-  Truck,
-  FlaskConical,
-  Headphones,
-  TrendingUp,
   Users,
-  Calculator,
   MessageCircle,
+  Building2,
+  Briefcase,
+  Plane,
+  Package,
+  Receipt,
+  Shield,
+  Cloud,
+  Car,
+  Wrench,
+  MoreHorizontal,
+  Calendar,
+  Percent,
+  PartyPopper,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { motion } from 'motion/react'
+import { motion, AnimatePresence } from 'motion/react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   DropdownMenu,
@@ -133,19 +143,6 @@ interface SpendingCategory {
   icon: LucideIcon
 }
 
-// Base spending category definitions (amounts will be generated dynamically)
-const spendingCategoryDefs = [
-  { id: 'food', name: 'Food', icon: UtensilsCrossed, baseAmount: 2800 },
-  { id: 'marketing', name: 'Marketing', icon: Megaphone, baseAmount: 1900 },
-  { id: 'software', name: 'Software', icon: Monitor, baseAmount: 950 },
-  { id: 'logistics', name: 'Logistics', icon: Truck, baseAmount: 2100 },
-  { id: 'research', name: 'Research', icon: FlaskConical, baseAmount: 1250 },
-  { id: 'support', name: 'Customer Support', icon: Headphones, baseAmount: 680 },
-  { id: 'sales', name: 'Sales', icon: TrendingUp, baseAmount: 1550 },
-  { id: 'hr', name: 'Human Resources', icon: Users, baseAmount: 1020 },
-  { id: 'finance', name: 'Finance', icon: Calculator, baseAmount: 450 },
-]
-
 /**
  * Income source data
  */
@@ -185,34 +182,6 @@ function generateIncomeSources(viewType: 'month' | 'year', periodIndex: number):
       name: src.name,
       amount: Math.round(amount * 100) / 100,
       icon: src.icon,
-    }
-  })
-}
-
-/**
- * Generate spending categories based on period
- */
-function generateSpendingCategories(viewType: 'month' | 'year', periodIndex: number): SpendingCategory[] {
-  // Seeded random for consistent values
-  const seededRandom = (seed: number) => {
-    const x = Math.sin(seed * 9999) * 10000
-    return x - Math.floor(x)
-  }
-
-  // For year view, multiply by ~12 and add variance
-  const multiplier = viewType === 'year' ? 12 : 1
-  // For current month (December), scale by partial month progress
-  const isCurrentMonth = viewType === 'month' && periodIndex === SIMULATED_MONTH
-  const partialFraction = isCurrentMonth ? SIMULATED_DAY / 31 : 1
-
-  return spendingCategoryDefs.map((cat, idx) => {
-    const variance = seededRandom(periodIndex * 100 + idx) * 0.4 - 0.2 // -20% to +20%
-    const amount = cat.baseAmount * multiplier * partialFraction * (1 + variance)
-    return {
-      id: cat.id,
-      name: cat.name,
-      amount: Math.round(amount * 100) / 100,
-      icon: cat.icon,
     }
   })
 }
@@ -422,11 +391,6 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
     }
   }, [data])
 
-  // Generate dynamic spending categories based on current period
-  const spendingCategories = useMemo(() => {
-    return generateSpendingCategories(viewType, currentIndex)
-  }, [viewType, currentIndex])
-
   // Generate dynamic income sources based on current period
   const incomeSources = useMemo(() => {
     return generateIncomeSources(viewType, currentIndex)
@@ -438,8 +402,9 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
   return (
     <div className="flex flex-col h-full bg-white overflow-auto">
       {/* Fixed Header */}
-      <div className="shrink-0 px-12 pt-7 pb-5 bg-white">
-        <div className="flex items-center justify-between">
+      <div className="shrink-0 px-12 pt-6 pb-8 bg-white">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="flex items-center justify-between">
           {/* Left Side: Combined Period Selector */}
           <div className="flex items-center gap-4">
             {/* Combined pill with Month/Year toggle, divider, and date dropdown */}
@@ -484,8 +449,8 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
 
           {/* Right Side: Action buttons */}
           <div className="flex items-center gap-3">
-            {/* Monthly Summary - only shows on month view */}
-            {viewType === 'month' && (
+            {/* Monthly Summary - only shows on past months, not current month */}
+            {viewType === 'month' && currentIndex < SIMULATED_MONTH && (
               <button
                 onClick={() => {
                   console.log('Monthly Summary clicked')
@@ -502,6 +467,7 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
               <FileText className="w-5 h-5" />
               View P&L Report
             </button>
+          </div>
           </div>
         </div>
       </div>
@@ -524,7 +490,7 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
                     value="profit"
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Wallet className="w-4 h-4" />
                     Profit & Loss
                   </TabsTrigger>
                   <TabsTrigger
@@ -545,7 +511,7 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
                     value="cash"
                     className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
                   >
-                    <Landmark className="w-4 h-4" />
+                    <Banknote className="w-4 h-4" />
                     Cash On Hand
                   </TabsTrigger>
                 </TabsList>
@@ -554,11 +520,13 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
               {/* Total Value Display */}
               <div className="mb-6">
                 <div className="flex flex-col">
-                  {activeTab === 'cash' && (
-                    <span className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mb-1">
-                      Cash On Hand
-                    </span>
-                  )}
+                  {/* Label above the number */}
+                  <p className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mb-1">
+                    {activeTab === 'profit' && 'Total Profit'}
+                    {activeTab === 'revenue' && 'Total Income'}
+                    {activeTab === 'costs' && 'Total Cost'}
+                    {activeTab === 'cash' && 'Cash on Hand'}
+                  </p>
                   <span className={`text-[48px] font-medium font-['Poppins'] tracking-[-0.96px] leading-[1.1] ${
                     activeTab === 'profit' && currentTotal < 0
                       ? 'text-red-500'
@@ -573,12 +541,16 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
                       duration={0.25}
                     />
                   </span>
-                  {/* Show "as of" label for cash on hand in past periods */}
-                  {activeTab === 'cash' && cashOnHandData.asOfLabel && (
-                    <p className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mt-1">
-                      {cashOnHandData.asOfLabel}
-                    </p>
-                  )}
+                  {/* Subtext: period info */}
+                  <p className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins'] mt-1">
+                    {activeTab === 'cash'
+                      ? (cashOnHandData.asOfLabel || (viewType === 'month' ? 'Current balance' : 'Current balance'))
+                      : (viewType === 'month'
+                          ? (currentIndex === SIMULATED_MONTH ? 'Month to date' : MONTH_NAMES[currentIndex])
+                          : (currentIndex === (SIMULATED_YEAR - 2023) ? 'Year to date' : `${2023 + currentIndex}`)
+                        )
+                    }
+                  </p>
                 </div>
               </div>
 
@@ -626,10 +598,7 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
               </div>
             )}
             {activeTab === 'costs' && (
-              <div>
-                <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Spending Categories</h4>
-                <SpendingList categories={spendingCategories} />
-              </div>
+              <SpendingCategoriesSection costs={currentPeriod.costs} />
             )}
             {activeTab === 'cash' && (
               <div>
@@ -647,67 +616,142 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
 }
 
 /**
- * Spending List Component - Minimal row-based list matching BreakdownList design
+ * Spending Categories Section - Matches V3 design
  */
-interface SpendingListProps {
-  categories: SpendingCategory[]
-}
+function SpendingCategoriesSection({ costs }: { costs: number }) {
+  const [isExpanded, setIsExpanded] = useState(false)
 
-function SpendingList({ categories }: SpendingListProps) {
-  // Sort categories by amount (descending)
-  const sortedCategories = useMemo(() => {
-    return [...categories].sort((a, b) => b.amount - a.amount)
-  }, [categories])
+  // Generate spending categories based on total costs
+  const spendingCategories: SpendingCategory[] = useMemo(() => {
+    const categoriesWithSpending = [
+      { id: 'payroll', name: 'Payroll & Benefits', icon: Users, percentage: 0.28 },
+      { id: 'rent', name: 'Rent & Utilities', icon: Building2, percentage: 0.18 },
+      { id: 'software', name: 'Software & Subscriptions', icon: Monitor, percentage: 0.12 },
+      { id: 'marketing', name: 'Marketing', icon: Megaphone, percentage: 0.10 },
+      { id: 'consulting', name: 'Consulting & Advisors', icon: Briefcase, percentage: 0.08 },
+      { id: 'cloud', name: 'Cloud & Hosting', icon: Cloud, percentage: 0.06 },
+      { id: 'meals', name: 'Meals & Entertainment', icon: UtensilsCrossed, percentage: 0.05 },
+      { id: 'taxes', name: 'Taxes & Licenses', icon: Receipt, percentage: 0.04 },
+      { id: 'insurance', name: 'Insurance', icon: Shield, percentage: 0.03 },
+      { id: 'bank', name: 'Bank & Processing Fees', icon: Landmark, percentage: 0.02 },
+      { id: 'inventory', name: 'Inventory & Supplies', icon: Package, percentage: 0.02 },
+      { id: 'team', name: 'Team Perks & Morale', icon: PartyPopper, percentage: 0.02 },
+    ]
+    const zeroSpendingCategories = [
+      { id: 'travel', name: 'Travel', icon: Plane, percentage: 0 },
+      { id: 'vehicle', name: 'Vehicle & Transportation', icon: Car, percentage: 0 },
+      { id: 'maintenance', name: 'Maintenance & Repairs', icon: Wrench, percentage: 0 },
+      { id: 'events', name: 'Events & Conferences', icon: Calendar, percentage: 0 },
+      { id: 'interest', name: 'Interest Paid', icon: Percent, percentage: 0 },
+      { id: 'loan', name: 'Loan Payments', icon: Banknote, percentage: 0 },
+      { id: 'other', name: 'Other Expenses', icon: MoreHorizontal, percentage: 0 },
+    ]
+    return [...categoriesWithSpending, ...zeroSpendingCategories].map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      icon: cat.icon,
+      amount: Math.round(costs * cat.percentage)
+    }))
+  }, [costs])
 
-  // Calculate total for percentage
-  const totalAmount = useMemo(() => {
-    return categories.reduce((sum, cat) => sum + cat.amount, 0)
-  }, [categories])
+  const categoriesWithSpending = spendingCategories.filter(c => c.amount > 0)
+  const categoriesWithoutSpending = spendingCategories.filter(c => c.amount === 0)
+  const totalSpending = categoriesWithSpending.reduce((sum, c) => sum + c.amount, 0)
 
   return (
-    <div className="flex flex-col max-w-[800px]">
-      {sortedCategories.map((category, index) => {
-        const percentOfTotal = (category.amount / totalAmount) * 100
-        const Icon = category.icon
+    <div className="h-full">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-5">
+        <div className="bg-[var(--color-neutral-g-50)] rounded-lg p-2">
+          <CreditCard className="w-5 h-5 text-[var(--color-neutral-n-800)]" />
+        </div>
+        <span className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.32px]">
+          Spending Categories
+        </span>
+      </div>
 
-        return (
-          <div
-            key={category.id}
-            className={`flex items-center gap-4 py-4 ${
-              index < sortedCategories.length - 1 ? 'border-b border-[var(--color-neutral-g-100)]' : ''
-            }`}
-          >
-            {/* Icon + Label */}
-            <div className="flex items-center gap-3 w-[180px] flex-shrink-0">
-              <Icon className="w-5 h-5 text-[var(--color-neutral-n-600)]" strokeWidth={1.5} />
-              <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins']">
+      {/* Categories List */}
+      <div className="flex flex-col gap-3">
+        {/* Categories with spending (always visible) */}
+        {categoriesWithSpending.map((category) => {
+          const Icon = category.icon
+          const barWidth = totalSpending > 0 ? (category.amount / totalSpending) * 100 : 0
+
+          return (
+            <div key={category.id} className="flex items-center gap-2 whitespace-nowrap">
+              <Icon className="w-4 h-4 text-[var(--color-neutral-n-600)] flex-shrink-0" />
+              <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px] w-[120px] flex-shrink-0 truncate">
                 {category.name}
               </span>
+              <div className="flex-1 h-[7px] bg-[var(--color-neutral-g-100)] rounded-full overflow-hidden min-w-[60px]">
+                <div
+                  className="h-full bg-[var(--color-neutral-n-800)] rounded-full transition-all duration-300"
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+              <span className="text-[13px] font-['Poppins'] tracking-[-0.26px] w-[70px] text-right flex-shrink-0 text-[var(--color-neutral-n-800)]">
+                ${category.amount.toLocaleString()}
+              </span>
             </div>
+          )
+        })}
 
-            {/* Progress bar */}
-            <div className="flex-1 h-2 bg-[#e5e7e7] rounded-full overflow-hidden min-w-[100px]">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.max(percentOfTotal, 2)}%`,
-                  backgroundColor: '#1a1a1a'
+        {/* Animated zero-spending categories */}
+        <AnimatePresence>
+          {isExpanded && categoriesWithoutSpending.map((category, index) => {
+            const Icon = category.icon
+
+            return (
+              <motion.div
+                key={category.id}
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginTop: 0 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                transition={{
+                  duration: 0.2,
+                  delay: index * 0.03,
+                  ease: 'easeOut'
                 }}
-              />
-            </div>
+                className="flex items-center gap-2 whitespace-nowrap overflow-hidden"
+              >
+                <Icon className="w-4 h-4 text-[var(--color-neutral-n-600)] flex-shrink-0" />
+                <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px] w-[120px] flex-shrink-0 truncate">
+                  {category.name}
+                </span>
+                <div className="flex-1 h-[7px] bg-[var(--color-neutral-g-100)] rounded-full overflow-hidden min-w-[60px]">
+                  <div className="h-full bg-[var(--color-neutral-n-800)] rounded-full" style={{ width: '0%' }} />
+                </div>
+                <span className="text-[13px] font-['Poppins'] tracking-[-0.26px] w-[70px] text-right flex-shrink-0 text-[var(--color-neutral-n-800)]">
+                  $0
+                </span>
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
 
-            {/* Amount */}
-            <span className="text-[15px] font-medium text-[#1a1a1a] font-['Poppins'] w-28 text-right flex-shrink-0">
-              ${category.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        {/* Expand/Collapse button for zero-spending categories */}
+        {categoriesWithoutSpending.length > 0 && (
+          <motion.button
+            layout
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 mt-2 text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.28px] hover:text-[var(--color-neutral-n-700)] transition-colors"
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <motion.div
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="w-4 h-4" />
+            </motion.div>
+            <span>
+              {isExpanded
+                ? 'Hide categories with no spending'
+                : `+${categoriesWithoutSpending.length} categories with no spending`
+              }
             </span>
-
-            {/* Percentage */}
-            <span className="text-[15px] text-[#6b7280] font-['Poppins'] w-12 text-right flex-shrink-0">
-              {Math.round(percentOfTotal)}%
-            </span>
-          </div>
-        )
-      })}
+          </motion.button>
+        )}
+      </div>
     </div>
   )
 }
@@ -811,12 +855,12 @@ function ProfitBreakdown({ revenue, costs }: ProfitBreakdownProps) {
 
       {/* Breakdown */}
       <div className="flex flex-col gap-4">
-        {/* Revenue */}
+        {/* Income */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--color-chart-revenue)' }} />
             <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px]">
-              Revenue
+              Income
             </span>
           </div>
           <span className="text-[18px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.36px]">

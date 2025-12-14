@@ -31,7 +31,6 @@ import {
   RefreshCw,
   Check,
   MoreVertical,
-  Shield,
   Plus,
   Laptop,
   Trash2,

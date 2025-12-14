@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, CreditCard, X, User, LogOut, Headset, Rocket, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, BarChart3, Landmark, MessageSquare, Sparkles } from 'lucide-react'
+import { LayoutDashboard, CreditCard, X, User, LogOut, Headset, Rocket, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, BarChart3, Landmark } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
