@@ -48,9 +48,13 @@
     --color-brand-primary: #467c75;
 
     /* Chart Colors - Muted Data Palette */
-    --color-chart-revenue: #2a4a47;      /* Dark teal - primary metric */
-    --color-chart-costs: #c9a087;        /* Muted tan/sand */
+    --color-chart-revenue: #1e3834;      /* Dark teal - revenue bars */
+    --color-chart-costs: #b68b69;        /* Brown/tan - costs bars */
     --color-chart-cash: #8d9291;         /* Muted gray */
+
+    /* Semantic Colors */
+    --color-loss: #ac4545;               /* Red - loss states, flagged items */
+    --color-flag: #ac4545;               /* Red - flagged transactions */
 
     /* Spending Category Colors - Muted Palette */
     --color-spending-1: #2D7A4B;         /* Green - Equipment/Payroll */

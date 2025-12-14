@@ -39,6 +39,7 @@ export interface Transaction {
   notes: string
   isDeleted: boolean // Soft delete
   isHidden: boolean // Hidden from reports
+  isFlagged: boolean // Flagged for review
   // For split transactions (v2)
   parentId?: string
   splitParts?: Array<{
@@ -97,6 +98,7 @@ export const mockCategories: Category[] = [
   { id: 'cat_8', name: 'Equipment', color: '#5C6B73', emoji: '🖥️' },
   { id: 'cat_9', name: 'Utilities', color: '#9B8B7A', emoji: '⚡' },
   { id: 'cat_10', name: 'Insurance', color: '#7A8B99', emoji: '🛡️' },
+  { id: 'cat_13', name: 'Rent', color: '#8B7355', emoji: '🏢' },
   { id: 'cat_11', name: 'Income', color: '#2a4a47', emoji: '💵' },
   { id: 'cat_12', name: 'Refund', color: '#4A9D8E', emoji: '↩️' },
   { id: 'cat_uncategorized', name: 'Uncategorized', color: '#8d9291', emoji: '❓' },
@@ -232,6 +234,9 @@ function generateTransaction(): Transaction {
 
   const date = randomDate(0, 90) // Last 90 days
 
+  // 10% chance of being flagged for review (AI uncertain)
+  const isFlagged = Math.random() < 0.10
+
   return {
     id: generateId(),
     date,
@@ -239,12 +244,13 @@ function generateTransaction(): Transaction {
     description: `${merchant.name} - ${isIncome ? 'Payment received' : 'Purchase'}`,
     amount: isIncome ? amount : -amount,
     accountId: account.id,
-    categoryId,
+    categoryId: isFlagged ? null : categoryId, // Flagged items don't have confident category
     categorySource,
     status,
     notes,
     isDeleted: false,
     isHidden: false,
+    isFlagged,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }

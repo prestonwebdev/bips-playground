@@ -26,13 +26,17 @@ interface DashboardContentProps {
   onPageChange: (page: string) => void
   onStartChat: (prompt: string) => void
   onViewChart: (tab: 'profit' | 'revenue' | 'costs' | 'cashOnHand') => void
+  onViewCostCategory: (category: string) => void
+  onViewRevenueSource: (source: string) => void
   externalPrompt: string | null
   onExternalPromptProcessed: () => void
   initialReportsTab: string | null
   onReportsTabUsed: () => void
+  initialCategoryFilter: string | null
+  onCategoryFilterUsed: () => void
 }
 
-function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart, externalPrompt, onExternalPromptProcessed, initialReportsTab, onReportsTabUsed }: DashboardContentProps) {
+function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart, onViewCostCategory, onViewRevenueSource, externalPrompt, onExternalPromptProcessed, initialReportsTab, onReportsTabUsed, initialCategoryFilter, onCategoryFilterUsed }: DashboardContentProps) {
   const { state } = useSidebar()
 
   const sidebarWidth = state === 'expanded' ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED
@@ -40,13 +44,13 @@ function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart,
   const renderPage = () => {
     switch (currentPage) {
       case '/overview':
-        return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} />
+        return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} onViewCostCategory={onViewCostCategory} onViewRevenueSource={onViewRevenueSource} />
       case '/reports':
         return <Reports initialTab={initialReportsTab} onInitialTabUsed={onReportsTabUsed} />
       case '/transactions':
-        return <Transactions />
+        return <Transactions initialCategory={initialCategoryFilter} onCategoryFilterUsed={onCategoryFilterUsed} />
       default:
-        return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} />
+        return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} onViewCostCategory={onViewCostCategory} onViewRevenueSource={onViewRevenueSource} />
     }
   }
 
@@ -66,7 +70,7 @@ function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart,
             />
           </div>
         )}
-        <div className={`relative z-10 ${isOverviewPage ? 'flex-1 flex flex-col justify-center overflow-auto pb-56 px-12' : 'absolute inset-0 overflow-hidden'}`}>
+        <div className={`z-10 ${isOverviewPage ? 'relative flex-1 flex flex-col justify-center overflow-auto pb-56 px-12' : 'absolute inset-0'}`}>
           {renderPage()}
         </div>
       </SidebarInset>
@@ -84,6 +88,7 @@ export default function DashboardV4Demo() {
   const [currentPage, setCurrentPage] = useState('/overview')
   const [externalPrompt, setExternalPrompt] = useState<string | null>(null)
   const [initialReportsTab, setInitialReportsTab] = useState<string | null>(null)
+  const [initialCategoryFilter, setInitialCategoryFilter] = useState<string | null>(null)
 
   const handleStartChat = useCallback((prompt: string) => {
     setExternalPrompt(prompt)
@@ -102,6 +107,20 @@ export default function DashboardV4Demo() {
     setInitialReportsTab(null)
   }, [])
 
+  const handleViewCostCategory = useCallback((category: string) => {
+    setInitialCategoryFilter(category)
+    setCurrentPage('/transactions')
+  }, [])
+
+  const handleViewRevenueSource = useCallback((source: string) => {
+    setInitialCategoryFilter(source)
+    setCurrentPage('/transactions')
+  }, [])
+
+  const handleCategoryFilterUsed = useCallback(() => {
+    setInitialCategoryFilter(null)
+  }, [])
+
   return (
     <SidebarProvider>
       <DashboardContent
@@ -109,10 +128,14 @@ export default function DashboardV4Demo() {
         onPageChange={setCurrentPage}
         onStartChat={handleStartChat}
         onViewChart={handleViewChart}
+        onViewCostCategory={handleViewCostCategory}
+        onViewRevenueSource={handleViewRevenueSource}
         externalPrompt={externalPrompt}
         onExternalPromptProcessed={handleExternalPromptProcessed}
         initialReportsTab={initialReportsTab}
         onReportsTabUsed={handleReportsTabUsed}
+        initialCategoryFilter={initialCategoryFilter}
+        onCategoryFilterUsed={handleCategoryFilterUsed}
       />
     </SidebarProvider>
   )

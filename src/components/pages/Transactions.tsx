@@ -9,7 +9,7 @@
  * - Proper scroll fade effect
  */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -31,6 +31,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Calendar } from '@/components/ui/calendar'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from '@/components/ui/pagination'
+import { format, subDays, startOfMonth, endOfMonth, startOfYear, subMonths } from 'date-fns'
+import type { DateRange } from 'react-day-picker'
 import {
   Transaction,
   mockTransactions,
@@ -41,7 +53,6 @@ import {
   getAccountById,
   formatDate,
 } from '@/lib/transactions-data'
-import { ScrollFadeEffect } from '@/components/ui/scroll-fade-effect'
 import { IconButton } from '@/components/ui/icon-button'
 import {
   Search,
@@ -68,8 +79,15 @@ import {
   ArrowLeftRight,
   User,
   Landmark,
+  Flag,
+  Download,
+  CalendarIcon,
+  Building2,
+  Eye,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+
+const ITEMS_PER_PAGE = 50
 
 type SortField = 'date' | 'merchant' | 'amount'
 type SortDirection = 'asc' | 'desc'
@@ -88,6 +106,7 @@ const categoryIcons: Record<string, LucideIcon> = {
   'cat_10': Shield,         // Insurance
   'cat_11': DollarSign,     // Income
   'cat_12': RotateCcw,      // Refund
+  'cat_13': Building2,      // Rent
   'cat_uncategorized': HelpCircle,
   'cat_personal': Home,
   'cat_cc_payment': CreditCard,
@@ -116,19 +135,59 @@ function formatAmount(amount: number): { text: string; isPositive: boolean } {
   return { text: `-${formatted}`, isPositive: false }
 }
 
-export default function Transactions() {
+interface TransactionsProps {
+  /** Show only flagged transactions on initial load */
+  initialShowFlagged?: boolean
+  /** Called when the flagged filter is consumed */
+  onFlaggedFilterUsed?: () => void
+  /** Initial category name to filter by */
+  initialCategory?: string | null
+  /** Called when the category filter is consumed */
+  onCategoryFilterUsed?: () => void
+}
+
+export default function Transactions({ initialShowFlagged, onFlaggedFilterUsed, initialCategory, onCategoryFilterUsed }: TransactionsProps = {}) {
   const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  // Initialize selected categories from initialCategory prop
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    if (initialCategory) {
+      // Find category by name and return its ID
+      const category = mockCategories.find(c => c.name === initialCategory)
+      return category ? [category.id] : []
+    }
+    return []
+  })
+  const [showFlaggedOnly, setShowFlaggedOnly] = useState(initialShowFlagged ?? false)
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  // Consume the initial flagged filter
+  useEffect(() => {
+    if (initialShowFlagged) {
+      onFlaggedFilterUsed?.()
+    }
+  }, [initialShowFlagged, onFlaggedFilterUsed])
+
+  // Consume the initial category filter
+  useEffect(() => {
+    if (initialCategory) {
+      onCategoryFilterUsed?.()
+    }
+  }, [initialCategory, onCategoryFilterUsed])
 
   // Filter transactions
   const filteredTransactions = useMemo(() => {
     return transactions.filter(txn => {
       if (txn.isDeleted) return false
+
+      // Flagged filter
+      if (showFlaggedOnly && !txn.isFlagged) return false
 
       // Search filter
       if (searchQuery) {
@@ -150,9 +209,16 @@ export default function Transactions() {
         if (!selectedCategories.includes(txnCategoryId)) return false
       }
 
+      // Date range filter
+      if (dateRange?.from) {
+        const txnDate = new Date(txn.date)
+        if (txnDate < dateRange.from) return false
+        if (dateRange.to && txnDate > dateRange.to) return false
+      }
+
       return true
     })
-  }, [transactions, searchQuery, selectedAccounts, selectedCategories])
+  }, [transactions, searchQuery, selectedAccounts, selectedCategories, showFlaggedOnly, dateRange])
 
   // Sort transactions
   const sortedTransactions = useMemo(() => {
@@ -173,10 +239,22 @@ export default function Transactions() {
     })
   }, [filteredTransactions, sortField, sortDirection])
 
+  // Pagination
+  const totalPages = Math.ceil(sortedTransactions.length / ITEMS_PER_PAGE)
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    return sortedTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+  }, [sortedTransactions, currentPage])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, selectedAccounts, selectedCategories, showFlaggedOnly, dateRange])
+
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(sortedTransactions.map(t => t.id)))
+      setSelectedIds(new Set(paginatedTransactions.map(t => t.id)))
     } else {
       setSelectedIds(new Set())
     }
@@ -213,23 +291,23 @@ export default function Transactions() {
     )
   }
 
-  // Update category
+  // Update category (also clears flagged status when a category is assigned)
   const handleCategoryChange = (id: string, categoryId: string) => {
     setTransactions(prev =>
       prev.map(txn =>
         txn.id === id
-          ? { ...txn, categoryId, categorySource: 'manual' as const, updatedAt: new Date().toISOString() }
+          ? { ...txn, categoryId, isFlagged: false, categorySource: 'manual' as const, updatedAt: new Date().toISOString() }
           : txn
       )
     )
   }
 
-  // Bulk category change
+  // Bulk category change (also clears flagged status)
   const handleBulkCategoryChange = (categoryId: string) => {
     setTransactions(prev =>
       prev.map(txn =>
         selectedIds.has(txn.id)
-          ? { ...txn, categoryId, categorySource: 'manual' as const, updatedAt: new Date().toISOString() }
+          ? { ...txn, categoryId, isFlagged: false, categorySource: 'manual' as const, updatedAt: new Date().toISOString() }
           : txn
       )
     )
@@ -252,7 +330,7 @@ export default function Transactions() {
     setSelectedIds(new Set())
   }
 
-  const isAllSelected = sortedTransactions.length > 0 && selectedIds.size === sortedTransactions.length
+  const isAllSelected = paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectedIds.has(t.id))
   const hasSelection = selectedIds.size > 0
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -265,14 +343,39 @@ export default function Transactions() {
   // Get visible business categories (non-hidden)
   const visibleCategories = mockCategories.filter(c => !c.isHidden)
 
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = []
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      if (currentPage <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i)
+        pages.push('ellipsis')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1)
+        pages.push('ellipsis')
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
+      } else {
+        pages.push(1)
+        pages.push('ellipsis')
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i)
+        pages.push('ellipsis')
+        pages.push(totalPages)
+      }
+    }
+    return pages
+  }
+
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* Fixed Filter Header */}
-      <div className="shrink-0 bg-white px-6 pt-6 pb-4 border-b border-[var(--color-neutral-g-100)]">
+    <div className="w-full h-full bg-white relative overflow-hidden">
+      {/* Fixed Header - absolute positioned */}
+      <div className="absolute top-0 left-0 right-0 px-12 pt-6 pb-8 z-20" style={{ background: 'linear-gradient(to bottom, white 0%, white 60%, transparent 100%)' }}>
         <div className="max-w-[1800px] mx-auto">
           <div className="flex items-center gap-3">
             {/* Search Input */}
-            <div className="relative flex-1 max-w-[320px]">
+            <div className="relative flex-1 max-w-[480px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-neutral-n-400)]" />
               <Input
                 placeholder="Search transactions..."
@@ -296,7 +399,7 @@ export default function Transactions() {
                 <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-[var(--color-neutral-g-200)] bg-white text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] transition-colors">
                   Account
                   {selectedAccounts.length > 0 && (
-                    <span className="bg-[var(--color-primary-p-500)] text-white text-[11px] px-1.5 py-0.5 rounded-full">
+                    <span className="bg-[var(--color-neutral-n-800)] text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center">
                       {selectedAccounts.length}
                     </span>
                   )}
@@ -338,20 +441,57 @@ export default function Transactions() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Category Filter Dropdown */}
+            {/* Category Filter Dropdown (includes Flagged option) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-[var(--color-neutral-g-200)] bg-white text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] transition-colors">
-                  Category
-                  {selectedCategories.length > 0 && (
-                    <span className="bg-[var(--color-primary-p-500)] text-white text-[11px] px-1.5 py-0.5 rounded-full">
-                      {selectedCategories.length}
-                    </span>
+                <button className={`flex items-center gap-2 px-4 h-10 rounded-full border text-[14px] font-['Poppins'] transition-colors ${
+                  showFlaggedOnly
+                    ? 'border-[var(--color-flag)] bg-[var(--color-flag)]/10 text-[var(--color-flag)]'
+                    : 'border-[var(--color-neutral-g-200)] bg-white text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)]'
+                }`}>
+                  {showFlaggedOnly ? (
+                    <>
+                      <Flag className="h-4 w-4 text-[var(--color-flag)]" />
+                      Flagged
+                    </>
+                  ) : (
+                    <>
+                      Category
+                      {selectedCategories.length > 0 && (
+                        <span className="bg-[var(--color-neutral-n-800)] text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center">
+                          {selectedCategories.length}
+                        </span>
+                      )}
+                    </>
                   )}
                   <ChevronDown className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[240px] p-2 max-h-[320px] overflow-y-auto">
+                {/* Flagged for Review option at top */}
+                <DropdownMenuItem
+                  className="flex items-center gap-2 px-3 py-2 cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setShowFlaggedOnly(!showFlaggedOnly)
+                    // Clear category filters when selecting flagged
+                    if (!showFlaggedOnly) {
+                      setSelectedCategories([])
+                    }
+                  }}
+                >
+                  <Checkbox
+                    checked={showFlaggedOnly}
+                    className="pointer-events-none"
+                  />
+                  <Flag className="h-4 w-4 text-[var(--color-flag)]" />
+                  <span className="text-[14px] font-['Poppins'] text-[var(--color-flag)]">Flagged for Review</span>
+                </DropdownMenuItem>
+
+                {/* Divider */}
+                <div className="h-px bg-[var(--color-neutral-g-100)] my-2" />
+
+                {/* Regular categories */}
                 {visibleCategories.map((category) => {
                   const CatIcon = getCategoryIcon(category.id)
                   return (
@@ -360,6 +500,10 @@ export default function Transactions() {
                       className="flex items-center gap-2 px-3 py-2 cursor-pointer"
                       onClick={(e) => {
                         e.preventDefault()
+                        // Clear flagged filter when selecting categories
+                        if (showFlaggedOnly) {
+                          setShowFlaggedOnly(false)
+                        }
                         if (selectedCategories.includes(category.id)) {
                           setSelectedCategories(prev => prev.filter(id => id !== category.id))
                         } else {
@@ -376,10 +520,13 @@ export default function Transactions() {
                     </DropdownMenuItem>
                   )
                 })}
-                {selectedCategories.length > 0 && (
+                {(selectedCategories.length > 0 || showFlaggedOnly) && (
                   <DropdownMenuItem
                     className="flex items-center justify-center gap-1 px-3 py-2 mt-1 border-t border-[var(--color-neutral-g-100)] text-[var(--color-neutral-n-500)] cursor-pointer"
-                    onClick={() => setSelectedCategories([])}
+                    onClick={() => {
+                      setSelectedCategories([])
+                      setShowFlaggedOnly(false)
+                    }}
                   >
                     <X className="h-3 w-3" />
                     Clear filter
@@ -388,6 +535,126 @@ export default function Transactions() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Date Range Picker */}
+            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <button className={`flex items-center gap-2 px-4 h-10 rounded-full border text-[14px] font-['Poppins'] transition-colors ${
+                  dateRange?.from
+                    ? 'border-[var(--color-primary-p-500)] text-[var(--color-primary-p-500)] bg-[var(--color-primary-p-50)]'
+                    : 'border-[var(--color-neutral-g-200)] bg-white text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)]'
+                }`}>
+                  <CalendarIcon className="h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, 'MMM d')} - {format(dateRange.to, 'MMM d')}
+                      </>
+                    ) : (
+                      format(dateRange.from, 'MMM d, yyyy')
+                    )
+                  ) : (
+                    'Date Range'
+                  )}
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <div className="flex">
+                  {/* Preset Options */}
+                  <div className="flex flex-col border-r border-[var(--color-neutral-g-100)] p-2 min-w-[140px]">
+                    <button
+                      className="px-3 py-2 text-left text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] rounded-md transition-colors"
+                      onClick={() => {
+                        const today = new Date()
+                        setDateRange({ from: subDays(today, 7), to: today })
+                        setIsDatePickerOpen(false)
+                      }}
+                    >
+                      Last 7 days
+                    </button>
+                    <button
+                      className="px-3 py-2 text-left text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] rounded-md transition-colors"
+                      onClick={() => {
+                        const today = new Date()
+                        setDateRange({ from: subDays(today, 30), to: today })
+                        setIsDatePickerOpen(false)
+                      }}
+                    >
+                      Last 30 days
+                    </button>
+                    <button
+                      className="px-3 py-2 text-left text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] rounded-md transition-colors"
+                      onClick={() => {
+                        const today = new Date()
+                        setDateRange({ from: startOfMonth(today), to: today })
+                        setIsDatePickerOpen(false)
+                      }}
+                    >
+                      This month
+                    </button>
+                    <button
+                      className="px-3 py-2 text-left text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] rounded-md transition-colors"
+                      onClick={() => {
+                        const today = new Date()
+                        const lastMonth = subMonths(today, 1)
+                        setDateRange({ from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) })
+                        setIsDatePickerOpen(false)
+                      }}
+                    >
+                      Last month
+                    </button>
+                    <button
+                      className="px-3 py-2 text-left text-[14px] font-['Poppins'] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)] rounded-md transition-colors"
+                      onClick={() => {
+                        const today = new Date()
+                        setDateRange({ from: startOfYear(today), to: today })
+                        setIsDatePickerOpen(false)
+                      }}
+                    >
+                      Year to date
+                    </button>
+                    {dateRange && (
+                      <button
+                        className="px-3 py-2 text-left text-[14px] font-['Poppins'] text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)] rounded-md transition-colors mt-2 border-t border-[var(--color-neutral-g-100)] pt-3"
+                        onClick={() => {
+                          setDateRange(undefined)
+                          setIsDatePickerOpen(false)
+                        }}
+                      >
+                        Clear dates
+                      </button>
+                    )}
+                  </div>
+                  {/* Calendar */}
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    className="p-3"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Clear Filters Button - shows when any filter is active */}
+            {(searchQuery || selectedAccounts.length > 0 || selectedCategories.length > 0 || showFlaggedOnly || dateRange?.from) && (
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setSelectedAccounts([])
+                  setSelectedCategories([])
+                  setShowFlaggedOnly(false)
+                  setDateRange(undefined)
+                }}
+                className="text-[14px] font-['Poppins'] text-[var(--color-neutral-n-600)] hover:text-[var(--color-neutral-n-800)] transition-colors underline"
+              >
+                Clear Filters
+              </button>
+            )}
+
             {/* Spacer */}
             <div className="flex-1" />
 
@@ -395,15 +662,26 @@ export default function Transactions() {
             <span className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins']">
               {sortedTransactions.length} Transaction{sortedTransactions.length !== 1 ? 's' : ''}
             </span>
+
+            {/* Export Button */}
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[var(--color-neutral-g-100)] text-[14px] font-['Poppins'] text-[var(--color-neutral-n-800)] hover:bg-[var(--color-neutral-g-50)] transition-colors shadow-[0px_2px_4px_0px_rgba(70,81,83,0.01),0px_7px_7px_0px_rgba(70,81,83,0.01)] ml-4"
+              onClick={() => {
+                // Placeholder for export functionality
+                console.log('Export clicked')
+              }}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Scrollable Table Content */}
-      <ScrollFadeEffect className="flex-1 min-h-0" fadeColor="white">
-        <div className="px-6 pt-6 pb-56">
-          <div className="max-w-[1800px] mx-auto">
-            <div className="bg-white rounded-[16px] border border-[var(--color-neutral-g-100)] overflow-hidden">
+      {/* Scrollable Table Content - positioned below header */}
+      <div className="absolute top-[85px] left-0 right-0 bottom-0 overflow-auto px-12 pt-6 pb-56">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="bg-white rounded-[16px] border border-[var(--color-neutral-g-100)] overflow-hidden">
             <Table>
               <TableHeader>
                 {/* Bulk Selection Header - Shows when items are selected */}
@@ -492,16 +770,10 @@ export default function Transactions() {
                     </div>
                   </TableHead>
                   <TableHead className="font-['Poppins'] font-medium text-[var(--color-neutral-n-800)] text-[14px] w-[165px]">
-                    <div className="flex items-center justify-between">
-                      Account
-                      <ArrowUpDown className="h-5 w-5 text-[var(--color-neutral-n-400)]" />
-                    </div>
+                    Account
                   </TableHead>
                   <TableHead className="font-['Poppins'] font-medium text-[var(--color-neutral-n-800)] text-[14px] w-[275px]">
-                    <div className="flex items-center justify-between">
-                      Category
-                      <ArrowUpDown className="h-5 w-5 text-[var(--color-neutral-n-400)]" />
-                    </div>
+                    Category
                   </TableHead>
                   <TableHead
                     className="cursor-pointer select-none font-['Poppins'] font-medium text-[var(--color-neutral-n-800)] text-[14px] w-[181px]"
@@ -516,14 +788,14 @@ export default function Transactions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedTransactions.length === 0 ? (
+                {paginatedTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center text-[var(--color-neutral-n-600)] font-['Poppins']">
                       No transactions found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sortedTransactions.map((transaction) => {
+                  paginatedTransactions.map((transaction) => {
                     const account = getAccountById(transaction.accountId)
                     const category = getCategoryById(transaction.categoryId)
                     const CategoryIcon = getCategoryIcon(transaction.categoryId)
@@ -538,7 +810,7 @@ export default function Transactions() {
                         className={`
                           h-[64px] transition-colors group
                           ${isSelected ? 'bg-white' : ''}
-                          ${isHiddenRow ? 'bg-[var(--color-neutral-g-50)]' : 'hover:bg-[var(--color-neutral-g-50)]'}
+                          ${isHiddenRow ? 'bg-[var(--color-neutral-g-100)] hover:bg-[var(--color-neutral-g-200)]' : 'hover:bg-[var(--color-neutral-g-50)]'}
                         `}
                       >
                         {/* Checkbox */}
@@ -551,17 +823,17 @@ export default function Transactions() {
                         </TableCell>
 
                         {/* Date */}
-                        <TableCell className={`font-['Poppins'] font-medium text-[14px] w-[165px] ${isHiddenRow ? 'text-[var(--color-neutral-n-600)]' : 'text-[var(--color-neutral-n-800)]'}`}>
+                        <TableCell className={`font-['Poppins'] font-medium text-[14px] w-[165px] ${isHiddenRow ? 'text-[var(--color-neutral-n-600)] line-through' : 'text-[var(--color-neutral-n-800)]'}`}>
                           {formatDate(transaction.date)}
                         </TableCell>
 
                         {/* Description (includes merchant info) */}
-                        <TableCell className="font-['Poppins'] text-[14px] text-[var(--color-neutral-n-600)] w-[233px]">
+                        <TableCell className={`font-['Poppins'] text-[14px] text-[var(--color-neutral-n-600)] w-[233px] ${isHiddenRow ? 'line-through' : ''}`}>
                           {transaction.description}
                         </TableCell>
 
                         {/* Account */}
-                        <TableCell className="font-['Poppins'] font-medium text-[14px] text-[var(--color-neutral-n-600)] w-[165px]">
+                        <TableCell className={`font-['Poppins'] font-medium text-[14px] text-[var(--color-neutral-n-600)] w-[165px] ${isHiddenRow ? 'line-through' : ''}`}>
                           {account ? `${account.institution} **${account.lastFour}` : 'Unknown'}
                         </TableCell>
 
@@ -573,12 +845,13 @@ export default function Transactions() {
                             Icon={CategoryIcon}
                             categories={mockCategories}
                             onCategoryChange={(catId) => handleCategoryChange(transaction.id, catId)}
+                            isFlagged={transaction.isFlagged}
                           />
                         </TableCell>
 
                         {/* Amount */}
                         <TableCell className={`font-['Poppins'] text-[14px] font-semibold w-[137px] ${
-                          isHiddenRow ? 'text-[var(--color-neutral-n-600)]' : isPositive ? 'text-[var(--color-primary-p-500)]' : 'text-[#976d4c]'
+                          isHiddenRow ? 'text-[var(--color-neutral-n-600)] line-through' : isPositive ? 'text-[var(--color-primary-p-500)]' : 'text-[#976d4c]'
                         }`}>
                           {amountText}
                         </TableCell>
@@ -591,7 +864,11 @@ export default function Transactions() {
                             title={transaction.isHidden ? 'Show in reports' : 'Hide from reports'}
                             size="md"
                           >
-                            <EyeOff className="h-4 w-4" />
+                            {transaction.isHidden ? (
+                              <Eye className="h-4 w-4" />
+                            ) : (
+                              <EyeOff className="h-4 w-4" />
+                            )}
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -601,10 +878,55 @@ export default function Transactions() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6 mb-8">
+              <span className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins']">
+                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, sortedTransactions.length)} of {sortedTransactions.length}
+              </span>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  {getPageNumbers().map((page, index) => (
+                    <PaginationItem key={index}>
+                      {page === 'ellipsis' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </div>
       </div>
-    </ScrollFadeEffect>
-  </div>
+
+      {/* Bottom fade gradient - positioned within content area */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-[100px] pointer-events-none z-10"
+        style={{ background: 'linear-gradient(to top, white 0%, transparent 100%)' }}
+      />
+    </div>
   )
 }
 
@@ -617,12 +939,64 @@ interface CategoryPillProps {
   Icon: LucideIcon
   categories: Category[]
   onCategoryChange: (categoryId: string) => void
+  isFlagged?: boolean
 }
 
-function CategoryPill({ category, categoryId, Icon, categories, onCategoryChange }: CategoryPillProps) {
+function CategoryPill({ category, categoryId, Icon, categories, onCategoryChange, isFlagged }: CategoryPillProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const visibleCategories = categories.filter(c => !c.isHidden)
+
+  // If flagged, show "Needs Review" with styling that prompts action
+  if (isFlagged) {
+    return (
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <button className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--color-flag)]/10 border border-[var(--color-flag)] hover:bg-[var(--color-flag)]/20 transition-colors shadow-[0px_2px_4px_0px_rgba(70,81,83,0.01),0px_7px_7px_0px_rgba(70,81,83,0.01)] whitespace-nowrap">
+            <Flag className="h-4 w-4 text-[var(--color-flag)] shrink-0" />
+            <span className="text-[14px] font-['Poppins'] font-medium text-[var(--color-flag)]">
+              Needs Review
+            </span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[260px] p-0" align="start">
+          <div className="px-3 py-2.5 border-b border-[var(--color-neutral-g-100)]">
+            <p className="text-[13px] font-['Poppins'] font-medium text-[var(--color-neutral-n-800)]">
+              Select the correct category
+            </p>
+            <p className="text-[12px] font-['Poppins'] text-[var(--color-neutral-n-500)] mt-0.5">
+              AI couldn't confidently categorize this transaction
+            </p>
+          </div>
+          <div className="p-2 space-y-1 max-h-[280px] overflow-y-auto">
+            {visibleCategories.map((cat) => {
+              const CatIcon = getCategoryIcon(cat.id)
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    onCategoryChange(cat.id)
+                    setIsOpen(false)
+                  }}
+                  className={`
+                    w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left
+                    hover:bg-[var(--color-neutral-g-50)] transition-colors
+                    ${categoryId === cat.id ? 'bg-[var(--color-primary-p-50)]' : ''}
+                  `}
+                >
+                  <CatIcon className="h-4 w-4 text-[var(--color-neutral-n-600)]" />
+                  <span className="text-[13px] font-['Poppins'] flex-1">{cat.name}</span>
+                  {categoryId === cat.id && (
+                    <Check className="h-4 w-4 text-[var(--color-primary-p-500)]" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    )
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

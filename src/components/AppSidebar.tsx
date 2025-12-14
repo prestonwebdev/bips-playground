@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, CreditCard, X, Settings, User, LogOut, HelpCircle, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, BarChart3, Landmark } from 'lucide-react'
+import { LayoutDashboard, CreditCard, X, User, LogOut, Headset, Rocket, ChevronUp, ChevronRight, PanelLeftClose, PanelLeft, BarChart3, Landmark, MessageSquare, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
@@ -29,6 +29,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { SettingsModal } from '@/components/SettingsModal'
 
 interface SubMenuItem {
   label: string
@@ -90,6 +91,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activePage = '/overview', onPageChange, sidebarBg = 'white', navItems = defaultNavItems }: AppSidebarProps) {
   const [showAnnouncement, setShowAnnouncement] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const { state, toggleSidebar } = useSidebar()
   const menuItems = navItems
 
@@ -285,17 +287,17 @@ export function AppSidebar({ activePage = '/overview', onPageChange, sidebarBg =
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="gap-2 cursor-pointer">
+                <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => setSettingsOpen(true)}>
                   <User className="h-4 w-4" />
                   <span>Account</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="gap-2 cursor-pointer">
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
+                  <Headset className="h-4 w-4" />
+                  <span>Support</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="gap-2 cursor-pointer">
-                  <HelpCircle className="h-4 w-4" />
-                  <span>Support</span>
+                  <Rocket className="h-4 w-4" />
+                  <span>Request A Feature</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="gap-2 cursor-pointer">
@@ -307,6 +309,9 @@ export function AppSidebar({ activePage = '/overview', onPageChange, sidebarBg =
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      {/* Settings Modal */}
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </Sidebar>
   )
 }

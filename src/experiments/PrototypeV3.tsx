@@ -8,7 +8,7 @@
 import { useState, useCallback } from 'react'
 import { SidebarProvider, SidebarInset, useSidebar } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/AppSidebar'
-import DashboardV4 from '@/components/pages/DashboardV4'
+import DashboardV5 from '@/components/pages/DashboardV5'
 import ReportsV3 from '@/components/pages/ReportsV3'
 import Transactions from '@/components/pages/Transactions'
 import ChatBar from '@/components/ChatBar'
@@ -23,13 +23,19 @@ interface DashboardContentProps {
   onPageChange: (page: string) => void
   onStartChat: (prompt: string) => void
   onViewChart: (tab: 'profit' | 'revenue' | 'costs' | 'cashOnHand') => void
+  onViewFlaggedTransactions: () => void
+  onViewCostCategory: (category: string) => void
   externalPrompt: string | null
   onExternalPromptProcessed: () => void
   initialReportsTab: string | null
   onReportsTabUsed: () => void
+  showFlaggedTransactions: boolean
+  onFlaggedFilterUsed: () => void
+  initialCategoryFilter: string | null
+  onCategoryFilterUsed: () => void
 }
 
-function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart, externalPrompt, onExternalPromptProcessed, initialReportsTab, onReportsTabUsed }: DashboardContentProps) {
+function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart, onViewFlaggedTransactions, onViewCostCategory, externalPrompt, onExternalPromptProcessed, initialReportsTab, onReportsTabUsed, showFlaggedTransactions, onFlaggedFilterUsed, initialCategoryFilter, onCategoryFilterUsed }: DashboardContentProps) {
   const { state } = useSidebar()
 
   const sidebarWidth = state === 'expanded' ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED
@@ -37,13 +43,13 @@ function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart,
   const renderPage = () => {
     switch (currentPage) {
       case '/overview':
-        return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} />
+        return <DashboardV5 onStartChat={onStartChat} onViewChart={onViewChart} onViewFlaggedTransactions={onViewFlaggedTransactions} onViewCostCategory={onViewCostCategory} />
       case '/reports':
         return <ReportsV3 initialTab={initialReportsTab} onInitialTabUsed={onReportsTabUsed} onStartChat={onStartChat} />
       case '/transactions':
-        return <Transactions />
+        return <Transactions initialShowFlagged={showFlaggedTransactions} onFlaggedFilterUsed={onFlaggedFilterUsed} initialCategory={initialCategoryFilter} onCategoryFilterUsed={onCategoryFilterUsed} />
       default:
-        return <DashboardV4 onStartChat={onStartChat} onViewChart={onViewChart} />
+        return <DashboardV5 onStartChat={onStartChat} onViewChart={onViewChart} onViewFlaggedTransactions={onViewFlaggedTransactions} onViewCostCategory={onViewCostCategory} />
     }
   }
 
@@ -63,7 +69,7 @@ function DashboardContent({ currentPage, onPageChange, onStartChat, onViewChart,
             />
           </div>
         )}
-        <div className={`relative z-10 ${isOverviewPage ? 'flex-1 flex flex-col justify-center overflow-auto pb-56 px-12' : 'absolute inset-0 overflow-hidden'}`}>
+        <div className={`z-10 ${isOverviewPage ? 'relative flex-1 flex flex-col justify-center overflow-auto pb-56 px-12' : 'absolute inset-0'}`}>
           {renderPage()}
         </div>
       </SidebarInset>
@@ -81,6 +87,8 @@ export default function PrototypeV3() {
   const [currentPage, setCurrentPage] = useState('/overview')
   const [externalPrompt, setExternalPrompt] = useState<string | null>(null)
   const [initialReportsTab, setInitialReportsTab] = useState<string | null>(null)
+  const [showFlaggedTransactions, setShowFlaggedTransactions] = useState(false)
+  const [initialCategoryFilter, setInitialCategoryFilter] = useState<string | null>(null)
 
   const handleStartChat = useCallback((prompt: string) => {
     setExternalPrompt(prompt)
@@ -99,6 +107,24 @@ export default function PrototypeV3() {
     setInitialReportsTab(null)
   }, [])
 
+  const handleViewFlaggedTransactions = useCallback(() => {
+    setShowFlaggedTransactions(true)
+    setCurrentPage('/transactions')
+  }, [])
+
+  const handleFlaggedFilterUsed = useCallback(() => {
+    setShowFlaggedTransactions(false)
+  }, [])
+
+  const handleViewCostCategory = useCallback((category: string) => {
+    setInitialCategoryFilter(category)
+    setCurrentPage('/transactions')
+  }, [])
+
+  const handleCategoryFilterUsed = useCallback(() => {
+    setInitialCategoryFilter(null)
+  }, [])
+
   return (
     <SidebarProvider>
       <DashboardContent
@@ -106,10 +132,16 @@ export default function PrototypeV3() {
         onPageChange={setCurrentPage}
         onStartChat={handleStartChat}
         onViewChart={handleViewChart}
+        onViewFlaggedTransactions={handleViewFlaggedTransactions}
+        onViewCostCategory={handleViewCostCategory}
         externalPrompt={externalPrompt}
         onExternalPromptProcessed={handleExternalPromptProcessed}
         initialReportsTab={initialReportsTab}
         onReportsTabUsed={handleReportsTabUsed}
+        showFlaggedTransactions={showFlaggedTransactions}
+        onFlaggedFilterUsed={handleFlaggedFilterUsed}
+        initialCategoryFilter={initialCategoryFilter}
+        onCategoryFilterUsed={handleCategoryFilterUsed}
       />
     </SidebarProvider>
   )

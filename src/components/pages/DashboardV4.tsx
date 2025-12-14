@@ -61,9 +61,10 @@ interface HoverableTextProps {
   children: React.ReactNode
   tooltipContent: React.ReactNode
   className?: string
+  onClick?: () => void
 }
 
-function HoverableText({ children, tooltipContent, className = '' }: HoverableTextProps) {
+function HoverableText({ children, tooltipContent, className = '', onClick }: HoverableTextProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null)
   const triggerRef = useRef<HTMLSpanElement>(null)
@@ -83,9 +84,10 @@ function HoverableText({ children, tooltipContent, className = '' }: HoverableTe
   return (
     <span
       ref={triggerRef}
-      className={`relative inline cursor-default ${className}`}
+      className={`relative inline ${onClick ? 'cursor-pointer hover:underline' : 'cursor-default'} ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onClick={onClick}
     >
       {children}
       <AnimatePresence>
@@ -304,7 +306,7 @@ function AssetsDebts({ assets, debts, checkingBalance, savingsBalance1, savingsB
           <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center">
             <WellsFargoIcon />
           </div>
-          <span className="text-base font-medium tracking-[-0.32px] text-[#ac4545]">
+          <span className="text-base font-medium tracking-[-0.32px] text-[var(--color-loss)]">
             -${Math.abs(debts).toLocaleString()}
           </span>
         </div>
@@ -323,7 +325,7 @@ function AssetsDebts({ assets, debts, checkingBalance, savingsBalance1, savingsB
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[var(--color-neutral-n-700)] text-[14px] font-normal font-['Poppins']">Wells Fargo ***4455</span>
-                  <span className="text-[#ac4545] text-[15px] font-medium font-['Poppins']">-${Math.abs(debts).toLocaleString()}</span>
+                  <span className="text-[var(--color-loss)] text-[15px] font-medium font-['Poppins']">-${Math.abs(debts).toLocaleString()}</span>
                 </div>
               </div>
             </motion.div>
@@ -343,6 +345,7 @@ interface MetricCardProps {
   actionLabel: string
   value: number
   valueColor?: string
+  valuePrefix?: string
   insight: React.ReactNode
   visualization?: React.ReactNode
   prompt: string
@@ -358,6 +361,7 @@ function MetricCard({
   actionLabel,
   value,
   valueColor = 'var(--color-primary-p-800)',
+  valuePrefix,
   insight,
   visualization,
   prompt,
@@ -425,11 +429,11 @@ function MetricCard({
 
         {/* Value - No animation */}
         <div className="py-3">
-          <div style={{ color: valueColor }}>
+          <div className="text-4xl font-medium tracking-[-0.72px] leading-[44px]" style={{ color: valueColor }}>
+            {valuePrefix}
             <AnimatedNumber
               value={value}
               format="full"
-              className="text-4xl font-medium tracking-[-0.72px] leading-[44px]"
               animate={false}
             />
           </div>
@@ -487,6 +491,8 @@ function MetricCard({
 interface DashboardV4Props {
   onStartChat?: (prompt: string) => void
   onViewChart?: (tab: 'profit' | 'revenue' | 'costs' | 'cashOnHand') => void
+  onViewCostCategory?: (category: string) => void
+  onViewRevenueSource?: (source: string) => void
 }
 
 // Module-level flag to track if animation has been shown
@@ -496,7 +502,7 @@ let hasAnimatedThisSession = false
 /**
  * Main DashboardV4 Component
  */
-export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Props) {
+export default function DashboardV4({ onStartChat, onViewChart, onViewCostCategory, onViewRevenueSource }: DashboardV4Props) {
   const userName = 'Preston'
 
   // Track if this is the first visit in this session
@@ -567,17 +573,24 @@ export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Pro
 
       {/* Metric Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-        {/* Profit Card */}
+        {/* Profit/Loss Card */}
         <MetricCard
           icon={Wallet}
-          label="Profit"
+          label={profit >= 0 ? 'Profit' : 'Loss'}
           actionLabel="View Chart"
-          value={profit}
-          valueColor="var(--color-primary-p-500)"
+          value={Math.abs(profit)}
+          valueColor={profit >= 0 ? 'var(--color-primary-p-500)' : 'var(--color-loss)'}
+          valuePrefix={profit < 0 ? '-' : undefined}
           insight={
-            <>
-              Your profit margin is healthy at {profitPercent}% so far this month.
-            </>
+            profit >= 0 ? (
+              <>
+                Your profit margin is healthy at {profitPercent}% so far this month.
+              </>
+            ) : (
+              <>
+                You're currently operating at a loss of {Math.abs(profitPercent)}% this month.
+              </>
+            )
           }
           visualization={
             <ProfitSegmentedBar
@@ -587,7 +600,7 @@ export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Pro
               profit={profit}
             />
           }
-          prompt="How can I increase my profit margins?"
+          prompt={profit >= 0 ? 'How can I increase my profit margins?' : 'How can I reduce my losses?'}
           onPromptClick={handlePromptClick}
           onActionClick={() => onViewChart?.('profit')}
           index={0}
@@ -606,6 +619,7 @@ export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Pro
               Most of your revenue came from{' '}
               <HoverableText
                 className="font-bold text-[var(--color-neutral-n-800)]"
+                onClick={() => onViewRevenueSource?.('Income')}
                 tooltipContent={
                   <>
                     <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Stripe</div>
@@ -641,6 +655,7 @@ export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Pro
               Your biggest expenses this month are{' '}
               <HoverableText
                 className="font-bold text-[#b68b69]"
+                onClick={() => onViewCostCategory?.('Software & SaaS')}
                 tooltipContent={
                   <>
                     <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Software</div>
@@ -657,6 +672,7 @@ export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Pro
               ,{' '}
               <HoverableText
                 className="font-bold text-[#b68b69]"
+                onClick={() => onViewCostCategory?.('Insurance')}
                 tooltipContent={
                   <>
                     <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Insurance</div>
@@ -673,6 +689,7 @@ export default function DashboardV4({ onStartChat, onViewChart }: DashboardV4Pro
               , and{' '}
               <HoverableText
                 className="font-bold text-[#b68b69]"
+                onClick={() => onViewCostCategory?.('Rent')}
                 tooltipContent={
                   <>
                     <div className="text-[var(--color-neutral-n-800)] text-[15px] font-medium font-['Poppins']">Rent</div>

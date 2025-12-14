@@ -43,16 +43,25 @@ import {
   Landmark,
   FileText,
   Copy,
-  UtensilsCrossed,
   Megaphone,
   Monitor,
-  Truck,
-  FlaskConical,
-  Headphones,
-  TrendingUp,
   Users,
-  Calculator,
   MessageCircle,
+  Building2,
+  Briefcase,
+  UtensilsCrossed,
+  Plane,
+  Package,
+  Receipt,
+  Shield,
+  Cloud,
+  Car,
+  Wrench,
+  MoreHorizontal,
+  Calendar,
+  Percent,
+  PartyPopper,
+  Banknote,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -186,6 +195,171 @@ function PeriodDropdown({ currentPeriod, viewType, onPeriodSelect }: PeriodDropd
 }
 
 /**
+ * Account Balance Types and Data
+ */
+interface AccountBalance {
+  id: string
+  name: string
+  institution: string
+  accountNumber: string
+  amount: number
+  type: 'checking' | 'savings' | 'credit'
+}
+
+/**
+ * Generate account balances based on period
+ */
+function generateAccountBalances(viewType: 'month' | 'year', periodIndex: number): AccountBalance[] {
+  // Base balances that grow over time
+  const baseBalances = {
+    checking: 10000,
+    savings: 5000,
+    creditDebt: 1500, // Credit card debt (negative)
+  }
+
+  // Growth per month
+  const monthlyGrowth = {
+    checking: 450,
+    savings: 280,
+    creditDebt: 50, // Debt grows slower
+  }
+
+  // Calculate months from start (Jan 2024 = 0)
+  const monthsFromStart = viewType === 'year'
+    ? (periodIndex + 1) * 12 // End of year
+    : periodIndex + 1 // Month index + 1
+
+  // Add some variance based on period
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed * 9999) * 10000
+    return x - Math.floor(x)
+  }
+
+  const variance = seededRandom(periodIndex * 50) * 0.1 - 0.05 // -5% to +5%
+
+  return [
+    {
+      id: 'checking',
+      name: 'Business Checking',
+      institution: 'Chase',
+      accountNumber: '1145',
+      type: 'checking',
+      amount: Math.round(baseBalances.checking + monthlyGrowth.checking * monthsFromStart * (1 + variance)),
+    },
+    {
+      id: 'savings',
+      name: 'Business Savings',
+      institution: 'Chase',
+      accountNumber: '2224',
+      type: 'savings',
+      amount: Math.round(baseBalances.savings + monthlyGrowth.savings * monthsFromStart * (1 + variance)),
+    },
+    {
+      id: 'credit',
+      name: 'Credit Card',
+      institution: 'Wells Fargo',
+      accountNumber: '4455',
+      type: 'credit',
+      amount: -Math.round(baseBalances.creditDebt + monthlyGrowth.creditDebt * monthsFromStart * (1 + variance)),
+    },
+  ]
+}
+
+/**
+ * Accounts Section Component (for Cash on Hand tab)
+ */
+function AccountsSection({ viewType, periodIndex }: { viewType: 'month' | 'year', periodIndex: number }) {
+  const accounts = useMemo(() => generateAccountBalances(viewType, periodIndex), [viewType, periodIndex])
+
+  // Separate cash accounts from debt accounts
+  const cashAccounts = accounts.filter(acc => acc.amount >= 0)
+  const debtAccounts = accounts.filter(acc => acc.amount < 0)
+
+  // Calculate totals
+  const totalCash = cashAccounts.reduce((sum, acc) => sum + acc.amount, 0)
+  const totalDebt = Math.abs(debtAccounts.reduce((sum, acc) => sum + acc.amount, 0))
+  const netCashOnHand = totalCash - totalDebt
+
+  return (
+    <div className="h-full">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-5">
+        <div className="bg-[var(--color-neutral-g-50)] rounded-lg p-2">
+          <Landmark className="w-5 h-5 text-[var(--color-neutral-n-800)]" />
+        </div>
+        <span className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.32px]">
+          Account Balances
+        </span>
+      </div>
+
+      {/* Cash Section */}
+      <div className="mb-4">
+        <span className="text-[13px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.26px] uppercase mb-2 block">
+          Cash
+        </span>
+        <div className="flex flex-col gap-2">
+          {cashAccounts.map((account) => (
+            <div key={account.id} className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px]">
+                  {account.name}
+                </span>
+                <span className="text-[12px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.24px]">
+                  {account.institution} ***{account.accountNumber}
+                </span>
+              </div>
+              <span className="text-[18px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.36px]">
+                ${account.amount.toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="h-px bg-[var(--color-neutral-g-100)] my-4" />
+
+      {/* Debts Section */}
+      <div className="mb-4">
+        <span className="text-[13px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.26px] uppercase mb-2 block">
+          Debts
+        </span>
+        <div className="flex flex-col gap-2">
+          {debtAccounts.map((account) => (
+            <div key={account.id} className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px]">
+                  {account.name}
+                </span>
+                <span className="text-[12px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.24px]">
+                  {account.institution} ***{account.accountNumber}
+                </span>
+              </div>
+              <span className="text-[18px] font-medium text-[var(--color-loss)] font-['Poppins'] tracking-[-0.36px]">
+                -${Math.abs(account.amount).toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="h-px bg-[var(--color-neutral-g-100)] my-4" />
+
+      {/* Net Total */}
+      <div className="flex items-center justify-between">
+        <span className="text-[14px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.28px]">
+          Net Cash On Hand
+        </span>
+        <span className="text-[20px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.4px]">
+          ${netCashOnHand.toLocaleString()}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Spending Categories Component
  */
 interface SpendingCategory {
@@ -202,22 +376,27 @@ function SpendingCategoriesSection({ costs }: { costs: number }) {
   // Categories with spending have percentages, zero-spending categories have 0
   const spendingCategories: SpendingCategory[] = useMemo(() => {
     const categoriesWithSpending = [
-      { id: 'food', name: 'Food', icon: UtensilsCrossed, percentage: 0.22 },
-      { id: 'marketing', name: 'Marketing', icon: Megaphone, percentage: 0.18 },
-      { id: 'software', name: 'Software', icon: Monitor, percentage: 0.14 },
-      { id: 'logistics', name: 'Logistics', icon: Truck, percentage: 0.12 },
-      { id: 'research', name: 'Research', icon: FlaskConical, percentage: 0.10 },
-      { id: 'support', name: 'Customer Support', icon: Headphones, percentage: 0.08 },
-      { id: 'sales', name: 'Sales', icon: TrendingUp, percentage: 0.07 },
-      { id: 'hr', name: 'Human Resources', icon: Users, percentage: 0.05 },
-      { id: 'finance', name: 'Finance', icon: Calculator, percentage: 0.04 },
+      { id: 'payroll', name: 'Payroll & Benefits', icon: Users, percentage: 0.28 },
+      { id: 'rent', name: 'Rent & Utilities', icon: Building2, percentage: 0.18 },
+      { id: 'software', name: 'Software & Subscriptions', icon: Monitor, percentage: 0.12 },
+      { id: 'marketing', name: 'Marketing', icon: Megaphone, percentage: 0.10 },
+      { id: 'consulting', name: 'Consulting & Advisors', icon: Briefcase, percentage: 0.08 },
+      { id: 'cloud', name: 'Cloud & Hosting', icon: Cloud, percentage: 0.06 },
+      { id: 'meals', name: 'Meals & Entertainment', icon: UtensilsCrossed, percentage: 0.05 },
+      { id: 'taxes', name: 'Taxes & Licenses', icon: Receipt, percentage: 0.04 },
+      { id: 'insurance', name: 'Insurance', icon: Shield, percentage: 0.03 },
+      { id: 'bank', name: 'Bank & Processing Fees', icon: Landmark, percentage: 0.02 },
+      { id: 'inventory', name: 'Inventory & Supplies', icon: Package, percentage: 0.02 },
+      { id: 'team', name: 'Team Perks & Morale', icon: PartyPopper, percentage: 0.02 },
     ]
     const zeroSpendingCategories = [
-      { id: 'travel', name: 'Travel', icon: Truck, percentage: 0 },
-      { id: 'entertainment', name: 'Entertainment', icon: Monitor, percentage: 0 },
-      { id: 'insurance', name: 'Insurance', icon: FileText, percentage: 0 },
-      { id: 'utilities', name: 'Utilities', icon: Landmark, percentage: 0 },
-      { id: 'legal', name: 'Legal', icon: FileText, percentage: 0 },
+      { id: 'travel', name: 'Travel', icon: Plane, percentage: 0 },
+      { id: 'vehicle', name: 'Vehicle & Transportation', icon: Car, percentage: 0 },
+      { id: 'maintenance', name: 'Maintenance & Repairs', icon: Wrench, percentage: 0 },
+      { id: 'events', name: 'Events & Conferences', icon: Calendar, percentage: 0 },
+      { id: 'interest', name: 'Interest Paid', icon: Percent, percentage: 0 },
+      { id: 'loan', name: 'Loan Payments', icon: Banknote, percentage: 0 },
+      { id: 'other', name: 'Other Expenses', icon: MoreHorizontal, percentage: 0 },
     ]
     return [...categoriesWithSpending, ...zeroSpendingCategories].map((cat) => ({
       id: cat.id,
@@ -791,7 +970,7 @@ function CashOnHandChart({ viewType, currentIndex, height = 'h-[350px]' }: { vie
                   </div>
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-[13px] text-[var(--color-neutral-n-600)]">Debts</span>
-                    <span className="text-[13px] font-medium text-[#ac4545]">-${debts.toLocaleString()}</span>
+                    <span className="text-[13px] font-medium text-[var(--color-loss)]">-${debts.toLocaleString()}</span>
                   </div>
                   <div className="h-px bg-[var(--color-neutral-g-100)] my-1" />
                   <div className="flex items-center justify-between gap-4">
@@ -993,6 +1172,7 @@ Please provide insights and recommendations based on this data.`
 
       {/* Main Content - Two Column Layout with Resizable Panels */}
       <div className="flex-1 overflow-auto px-12 py-6">
+        <div className="max-w-[1800px] mx-auto">
         <ResizablePanelGroup direction="horizontal" className="min-h-[500px]">
           {/* Left Column: Charts */}
           <ResizablePanel defaultSize={70} minSize={50}>
@@ -1094,13 +1274,18 @@ Please provide insights and recommendations based on this data.`
             className="bg-[var(--color-neutral-g-100)] hover:bg-[var(--color-neutral-g-200)] transition-colors data-[resize-handle-active]:bg-[var(--color-primary-p-100)]"
           />
 
-          {/* Right Column: Spending Categories */}
+          {/* Right Column: Spending Categories or Account Balances */}
           <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
             <div className="pl-6 h-full">
-              <SpendingCategoriesSection costs={currentPeriod.costs} />
+              {activeTab === 'cash' ? (
+                <AccountsSection viewType={viewType} periodIndex={currentIndex} />
+              ) : (
+                <SpendingCategoriesSection costs={currentPeriod.costs} />
+              )}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
+        </div>
       </div>
     </div>
   )

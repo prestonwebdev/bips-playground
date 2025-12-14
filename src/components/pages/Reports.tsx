@@ -58,8 +58,6 @@ import {
 } from 'recharts'
 import { ProfitBarChart as SharedProfitBarChart, CHART_COLORS } from '@/components/charts/ProfitBarChart'
 import { AnimatedNumber } from '@/components/overview/AnimatedNumber'
-import { SmartTooltip, useTooltipTrigger } from '@/components/ui/smart-tooltip'
-import { AnimatePresence } from 'motion/react'
 import {
   getFinancialDataByView,
   type FinancialPeriod,
@@ -72,7 +70,6 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   DollarSign,
   CreditCard,
   Landmark,
@@ -87,6 +84,7 @@ import {
   TrendingUp,
   Users,
   Calculator,
+  MessageCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
@@ -97,7 +95,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ScrollFadeEffect } from '@/components/ui/scroll-fade-effect'
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable'
+import { AnimatedChevron } from '@/components/ui/animated-chevron'
+
+// Month names
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 /**
  * Chart config
@@ -430,170 +436,213 @@ export default function Reports({ initialTab, onInitialTabUsed }: ReportsProps =
   const hasNext = currentIndex < data.length - 1
 
   return (
-    <ScrollFadeEffect className="h-full bg-white">
-      {/* Fixed Header Row - Stays at top when scrolling */}
-      <div className="fixed top-0 right-0 z-10 px-12 pt-6 pb-4 bg-white/90 backdrop-blur-[4px] border-b border-[var(--color-neutral-g-100)]" style={{ left: 'var(--sidebar-width, 324px)' }}>
-        <div className="max-w-[1800px] mx-auto flex items-center justify-between">
-          {/* Left Side: Navigation Arrows + Period with Dropdown */}
+    <div className="flex flex-col h-full bg-white overflow-auto">
+      {/* Fixed Header */}
+      <div className="shrink-0 px-12 pt-7 pb-5 bg-white">
+        <div className="flex items-center justify-between">
+          {/* Left Side: Combined Period Selector */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <NavigationButton
-                direction="prev"
-                onClick={() => handleNavigate('prev')}
-                disabled={!hasPrev}
-              />
-              <NavigationButton
-                direction="next"
-                onClick={() => handleNavigate('next')}
-                disabled={!hasNext}
-              />
+            {/* Combined pill with Month/Year toggle, divider, and date dropdown */}
+            <div className="flex items-center gap-1 p-1 bg-white border border-[var(--color-neutral-g-100)] rounded-full shadow-[0px_2px_4px_0px_rgba(70,81,83,0.01),0px_7px_7px_0px_rgba(70,81,83,0.01)]">
+              {/* Month/Year Toggle */}
+              <div className="flex items-center">
+                <button
+                  onClick={() => handleViewChange('month')}
+                  className={`px-3 py-[5px] rounded-full text-[15px] font-['Poppins'] tracking-[-0.3px] transition-colors ${
+                    viewType === 'month'
+                      ? 'bg-[var(--color-neutral-g-100)] text-[var(--color-primary-p-500)] font-semibold'
+                      : 'text-[var(--color-neutral-n-700)]'
+                  }`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => handleViewChange('year')}
+                  className={`px-3 py-1 rounded-full text-[15px] font-['Poppins'] tracking-[-0.3px] transition-colors ${
+                    viewType === 'year'
+                      ? 'bg-[var(--color-neutral-g-100)] text-[var(--color-primary-p-500)] font-semibold'
+                      : 'text-[var(--color-neutral-n-700)]'
+                  }`}
+                >
+                  Year
+                </button>
+              </div>
+
+              {/* Vertical Divider */}
+              <div className="w-px h-[35px] bg-[var(--color-neutral-g-100)]" />
+
+              {/* Date Dropdown */}
+              <PeriodDropdownV3 currentPeriod={currentPeriod} viewType={viewType} onPeriodSelect={handlePeriodSelect} />
             </div>
-            <PeriodDropdown
-              currentPeriod={currentPeriod}
-              viewType={viewType}
-              onPeriodSelect={handlePeriodSelect}
-            />
+
+            {/* Navigation Arrows - separate circular buttons */}
+            <div className="flex items-center gap-4">
+              <NavigationButton direction="prev" onClick={() => handleNavigate('prev')} disabled={!hasPrev} />
+              <NavigationButton direction="next" onClick={() => handleNavigate('next')} disabled={!hasNext} />
+            </div>
           </div>
 
-          {/* Right Side: Month/Year Toggle */}
-          <ViewToggle
-            currentView={viewType}
-            onViewChange={handleViewChange}
-          />
+          {/* Right Side: Action buttons */}
+          <div className="flex items-center gap-3">
+            {/* Monthly Summary - only shows on month view */}
+            {viewType === 'month' && (
+              <button
+                onClick={() => {
+                  console.log('Monthly Summary clicked')
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-normal font-['Poppins'] tracking-[-0.26px] transition-colors shadow-sm bg-white border border-[var(--color-neutral-g-200)] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)]"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Monthly Summary
+              </button>
+            )}
+
+            {/* View P&L Report button */}
+            <button className="flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-normal font-['Poppins'] tracking-[-0.26px] transition-colors shadow-sm bg-white border border-[var(--color-primary-p-500)] text-[var(--color-primary-p-500)] hover:bg-[var(--color-primary-p-50)]">
+              <FileText className="w-5 h-5" />
+              View P&L Report
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Scrollable Content - pt-24 accounts for fixed header height */}
-      <div className="px-12 pt-24 pb-56">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-auto px-12 py-6 pb-56 bg-white">
         <div className="max-w-[1800px] mx-auto">
 
-      {/* Main Chart Section with Tabs - No card wrapper */}
-      <div className="mb-6">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'profit' | 'revenue' | 'costs')} className="w-full">
-          {/* Tabs Row */}
-          <div className="flex items-center justify-between mb-8">
-            {/* Left: Tab buttons */}
-            <TabsList className="bg-transparent p-0 h-auto gap-1">
-              <TabsTrigger
-                value="profit"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
-              >
-                <Copy className="w-4 h-4" />
-                Profit & Loss
-              </TabsTrigger>
-              <TabsTrigger
-                value="revenue"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
-              >
-                <DollarSign className="w-4 h-4" />
-                Income
-              </TabsTrigger>
-              <TabsTrigger
-                value="costs"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
-              >
-                <CreditCard className="w-4 h-4" />
-                Costs
-              </TabsTrigger>
-              <TabsTrigger
-                value="cash"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
-              >
-                <Landmark className="w-4 h-4" />
-                Cash On Hand
-              </TabsTrigger>
-            </TabsList>
+      {/* Main Chart Section with Tabs - Two Column Layout */}
+      <ResizablePanelGroup direction="horizontal" className="min-h-[600px]">
+        {/* Left Column: Charts */}
+        <ResizablePanel defaultSize={70} minSize={50}>
+          <div className="pr-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'profit' | 'revenue' | 'costs')} className="w-full">
+              {/* Tabs Row */}
+              <div className="flex items-center justify-between mb-8">
+                {/* Left: Tab buttons */}
+                <TabsList className="bg-transparent p-0 h-auto gap-1">
+                  <TabsTrigger
+                    value="profit"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Profit & Loss
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="revenue"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
+                  >
+                    <DollarSign className="w-4 h-4" />
+                    Income
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="costs"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Costs
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="cash"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-[14px] font-medium font-['Poppins'] data-[state=active]:bg-[var(--color-neutral-g-100)] data-[state=active]:text-[var(--color-neutral-n-800)] data-[state=active]:shadow-none text-[var(--color-neutral-n-500)] hover:bg-[var(--color-neutral-g-50)]"
+                  >
+                    <Landmark className="w-4 h-4" />
+                    Cash On Hand
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-            {/* Right: Action button - only show on Profit tab */}
-            {activeTab === 'profit' && (
-              <div className="flex items-center gap-3">
-                <ActionButton
-                  icon={FileText}
-                  label="View P&L Report"
-                  tooltip="Generate a detailed profit & loss statement"
-                  variant="primary"
+              {/* Total Value Display */}
+              <div className="mb-6">
+                <div className="flex flex-col">
+                  {activeTab === 'cash' && (
+                    <span className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mb-1">
+                      Cash On Hand
+                    </span>
+                  )}
+                  <span className={`text-[48px] font-medium font-['Poppins'] tracking-[-0.96px] leading-[1.1] ${
+                    activeTab === 'profit' && currentTotal < 0
+                      ? 'text-red-500'
+                      : activeTab === 'costs'
+                        ? 'text-[#b68b69]'
+                        : 'text-[var(--color-neutral-n-800)]'
+                  }`}>
+                    {activeTab === 'profit' && currentTotal < 0 ? '-' : ''}
+                    <AnimatedNumber
+                      value={Math.abs(currentTotal)}
+                      format="full"
+                      duration={0.25}
+                    />
+                  </span>
+                  {/* Show "as of" label for cash on hand in past periods */}
+                  {activeTab === 'cash' && cashOnHandData.asOfLabel && (
+                    <p className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mt-1">
+                      {cashOnHandData.asOfLabel}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Chart Content */}
+              <TabsContent value="profit" className="mt-0">
+                <SharedProfitBarChart
+                  viewType={viewType}
+                  monthNumber={viewType === 'month' ? currentIndex : undefined}
+                  isCurrentPeriod={viewType === 'month' ? currentIndex === SIMULATED_MONTH : currentIndex === (SIMULATED_YEAR - 2023)}
+                  height="h-[480px]"
                 />
+              </TabsContent>
+              <TabsContent value="revenue" className="mt-0">
+                <IncomeBarChart viewType={viewType} currentIndex={currentIndex} height="h-[480px]" />
+              </TabsContent>
+              <TabsContent value="costs" className="mt-0">
+                <CostsBarChart viewType={viewType} currentIndex={currentIndex} height="h-[480px]" />
+              </TabsContent>
+              <TabsContent value="cash" className="mt-0">
+                <CashOnHandChart viewType={viewType} currentIndex={currentIndex} height="h-[480px]" />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </ResizablePanel>
+
+        {/* Resizable Handle */}
+        <ResizableHandle
+          withHandle
+          className="bg-[var(--color-neutral-g-100)] hover:bg-[var(--color-neutral-g-200)] transition-colors data-[resize-handle-active]:bg-[var(--color-primary-p-100)]"
+        />
+
+        {/* Right Column: Context panel based on active tab */}
+        <ResizablePanel defaultSize={30} minSize={20} maxSize={45}>
+          <div className="pl-6 h-full">
+            {activeTab === 'profit' && (
+              <div>
+                <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Profit Margin</h4>
+                <ProfitBreakdown revenue={currentPeriod.revenue} costs={currentPeriod.costs} />
+              </div>
+            )}
+            {activeTab === 'revenue' && (
+              <div>
+                <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Income Sources</h4>
+                <BreakdownList items={incomeSources} type="revenue" />
+              </div>
+            )}
+            {activeTab === 'costs' && (
+              <div>
+                <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Spending Categories</h4>
+                <SpendingList categories={spendingCategories} />
+              </div>
+            )}
+            {activeTab === 'cash' && (
+              <div>
+                <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Current Account Balances</h4>
+                <AccountList accounts={accountBalances} />
               </div>
             )}
           </div>
-
-          {/* Total Value Display */}
-          <div className="mb-6">
-            <div className="flex flex-col">
-              {activeTab === 'cash' && (
-                <span className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mb-1">
-                  Cash On Hand
-                </span>
-              )}
-              <span className={`text-[48px] font-medium font-['Poppins'] tracking-[-0.96px] leading-[1.1] ${
-                activeTab === 'profit' && currentTotal < 0
-                  ? 'text-red-500'
-                  : activeTab === 'costs'
-                    ? 'text-[#b68b69]'
-                    : 'text-[var(--color-neutral-n-800)]'
-              }`}>
-                {activeTab === 'profit' && currentTotal < 0 ? '-' : ''}
-                <AnimatedNumber
-                  value={Math.abs(currentTotal)}
-                  format="full"
-                  duration={0.25}
-                />
-              </span>
-              {/* Show "as of" label for cash on hand in past periods */}
-              {activeTab === 'cash' && cashOnHandData.asOfLabel && (
-                <p className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins'] mt-1">
-                  {cashOnHandData.asOfLabel}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Chart Content */}
-          <TabsContent value="profit" className="mt-0">
-            <SharedProfitBarChart
-              viewType={viewType}
-              monthNumber={viewType === 'month' ? currentIndex : undefined}
-              isCurrentPeriod={viewType === 'month' ? currentIndex === SIMULATED_MONTH : currentIndex === (SIMULATED_YEAR - 2023)}
-              height="h-[50vh] min-h-[350px]"
-            />
-            {/* Profit Margin Breakdown */}
-            <div className="mt-8 pt-6 border-t border-[var(--color-neutral-g-100)]">
-              <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Profit Margin</h4>
-              <ProfitBreakdown
-                revenue={currentPeriod.revenue}
-                costs={currentPeriod.costs}
-              />
-            </div>
-          </TabsContent>
-          <TabsContent value="revenue" className="mt-0">
-            <IncomeBarChart viewType={viewType} currentIndex={currentIndex} height="h-[50vh] min-h-[350px]" />
-            {/* Income Sources Breakdown */}
-            <div className="mt-8 pt-6 border-t border-[var(--color-neutral-g-100)]">
-              <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Income Sources</h4>
-              <BreakdownList items={incomeSources} type="revenue" />
-            </div>
-          </TabsContent>
-          <TabsContent value="costs" className="mt-0">
-            <CostsBarChart viewType={viewType} currentIndex={currentIndex} height="h-[50vh] min-h-[350px]" />
-            {/* Spending Categories Breakdown */}
-            <div className="mt-8 pt-6 border-t border-[var(--color-neutral-g-100)]">
-              <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Spending Categories</h4>
-              <SpendingList categories={spendingCategories} />
-            </div>
-          </TabsContent>
-          <TabsContent value="cash" className="mt-0">
-            <CashOnHandChart viewType={viewType} currentIndex={currentIndex} height="h-[50vh] min-h-[350px]" />
-            {/* Account Balances Breakdown */}
-            <div className="mt-8 pt-6 border-t border-[var(--color-neutral-g-100)]">
-              <h4 className="text-[16px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] mb-4">Current Account Balances</h4>
-              <AccountList accounts={accountBalances} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
         </div>
       </div>
-    </ScrollFadeEffect>
+    </div>
   )
 }
 
@@ -737,103 +786,74 @@ interface ProfitBreakdownProps {
 function ProfitBreakdown({ revenue, costs }: ProfitBreakdownProps) {
   const profit = revenue - costs
   const profitMargin = revenue > 0 ? (profit / revenue) * 100 : 0
-  const costsPercent = revenue > 0 ? (costs / revenue) * 100 : 0
-
-  const items = [
-    {
-      id: 'revenue',
-      label: 'Income',
-      amount: revenue,
-      percent: 100,
-      color: 'bg-[#2a4a47]',
-      textColor: 'text-[var(--color-neutral-n-800)]',
-    },
-    {
-      id: 'costs',
-      label: 'Costs',
-      amount: costs,
-      percent: costsPercent,
-      color: 'bg-[#b68b69]',
-      textColor: 'text-[#b68b69]',
-    },
-    {
-      id: 'profit',
-      label: 'Profit',
-      amount: profit,
-      percent: profitMargin,
-      color: profit >= 0 ? 'bg-[var(--color-primary-p-500)]' : 'bg-[#ac4545]',
-      textColor: profit >= 0 ? 'text-[var(--color-primary-p-500)]' : 'text-[#ac4545]',
-    },
-  ]
+  const costsPercent = revenue > 0 ? Math.round((costs / revenue) * 100) : 0
+  const isProfit = profit >= 0
 
   return (
-    <div className="flex flex-col max-w-[800px]">
-      {items.map((item, index) => (
-        <div
-          key={item.id}
-          className={`flex items-center gap-4 py-4 ${
-            index < items.length - 1 ? 'border-b border-[var(--color-neutral-g-100)]' : ''
-          }`}
-        >
-          {/* Label */}
-          <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] w-[160px] flex-shrink-0">
-            {item.label}
+    <div className="h-full">
+      {/* Profit Margin Display */}
+      <div className="mb-6">
+        <div className="flex items-baseline gap-2 mb-2">
+          <span className={`text-[36px] font-medium font-['Poppins'] tracking-[-0.72px] ${isProfit ? 'text-[var(--color-primary-p-500)]' : 'text-[var(--color-loss)]'}`}>
+            {isProfit ? '' : '-'}{Math.abs(Math.round(profitMargin))}%
           </span>
-
-          {/* Progress bar */}
-          <div className="flex-1 h-2 bg-[var(--color-neutral-g-100)] rounded-full overflow-hidden min-w-[100px]">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${item.color}`}
-              style={{ width: `${Math.max(2, item.percent)}%` }}
-            />
-          </div>
-
-          {/* Amount */}
-          <span className={`text-[15px] font-medium font-['Poppins'] w-28 text-right flex-shrink-0 ${item.textColor}`}>
-            {item.amount < 0 ? '-' : ''}${Math.abs(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-
-          {/* Percentage (only show for costs and profit) */}
-          <span className="text-[15px] text-[var(--color-neutral-n-500)] font-['Poppins'] w-12 text-right flex-shrink-0">
-            {item.id === 'revenue' ? '' : `${Math.round(item.percent)}%`}
+          <span className="text-[14px] text-[var(--color-neutral-n-500)] font-['Poppins']">
+            {isProfit ? 'profit margin' : 'loss margin'}
           </span>
         </div>
-      ))}
+        <p className="text-[14px] text-[var(--color-neutral-n-600)] font-['Poppins'] tracking-[-0.28px]">
+          {isProfit
+            ? `For every $1 of revenue, you keep $${(profitMargin / 100).toFixed(2)} as profit.`
+            : `For every $1 of revenue, you're losing $${(Math.abs(profitMargin) / 100).toFixed(2)}.`
+          }
+        </p>
+      </div>
 
-      {/* Profit Margin Summary */}
-      <div className="flex items-center justify-between pt-4 mt-2 border-t border-[var(--color-neutral-g-100)]">
-        <span className="text-[15px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins']">
-          Profit Margin
-        </span>
-        <span className={`text-[18px] font-medium font-['Poppins'] ${profitMargin >= 0 ? 'text-[var(--color-primary-p-500)]' : 'text-[#ac4545]'}`}>
-          {profitMargin.toFixed(1)}%
-        </span>
+      {/* Breakdown */}
+      <div className="flex flex-col gap-4">
+        {/* Revenue */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--color-chart-revenue)' }} />
+            <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px]">
+              Revenue
+            </span>
+          </div>
+          <span className="text-[18px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.36px]">
+            ${revenue.toLocaleString()}
+          </span>
+        </div>
+
+        {/* Costs */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--color-chart-costs)' }} />
+            <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px]">
+              Costs ({costsPercent}%)
+            </span>
+          </div>
+          <span className="text-[18px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.36px]">
+            ${costs.toLocaleString()}
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-[var(--color-neutral-g-100)]" />
+
+        {/* Profit/Loss */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${isProfit ? 'bg-[var(--color-primary-p-500)]' : 'bg-[var(--color-loss)]'}`} />
+            <span className="text-[15px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.3px]">
+              {isProfit ? 'Profit' : 'Loss'} ({Math.abs(Math.round(profitMargin))}%)
+            </span>
+          </div>
+          <span className={`text-[18px] font-medium font-['Poppins'] tracking-[-0.36px] ${isProfit ? 'text-[var(--color-primary-p-500)]' : 'text-[var(--color-loss)]'}`}>
+            {isProfit ? '' : '-'}${Math.abs(profit).toLocaleString()}
+          </span>
+        </div>
       </div>
     </div>
-  )
-}
-
-/**
- * Chase bank icon SVG
- */
-function ChaseIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="12" fill="#117ACA" />
-      <path d="M6 12h12M12 6v12" stroke="white" strokeWidth="2.5" />
-    </svg>
-  )
-}
-
-/**
- * Wells Fargo icon SVG
- */
-function WellsFargoIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect width="24" height="24" rx="12" fill="#D71E28" />
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" fontFamily="sans-serif">WF</text>
-    </svg>
   )
 }
 
@@ -845,77 +865,78 @@ interface AccountListProps {
 }
 
 function AccountList({ accounts }: AccountListProps) {
-  // Calculate total by summing all accounts (debt is already negative)
-  const totalBalance = accounts.reduce((sum, acc) => sum + acc.amount, 0)
+  // Separate cash accounts from debt accounts
+  const cashAccounts = accounts.filter(acc => acc.amount >= 0)
+  const debtAccounts = accounts.filter(acc => acc.amount < 0)
 
-  // For display purposes, calculate positive total for percentage calculations
-  const positiveTotal = accounts.reduce((sum, acc) => sum + Math.abs(acc.amount), 0)
-
-  const getBankIcon = (bankType: 'chase' | 'wellsfargo') => {
-    switch (bankType) {
-      case 'chase':
-        return <ChaseIcon />
-      case 'wellsfargo':
-        return <WellsFargoIcon />
-      default:
-        return <ChaseIcon />
-    }
-  }
+  // Calculate totals
+  const totalCash = cashAccounts.reduce((sum, acc) => sum + acc.amount, 0)
+  const totalDebt = Math.abs(debtAccounts.reduce((sum, acc) => sum + acc.amount, 0))
+  const netCashOnHand = totalCash - totalDebt
 
   return (
-    <div className="flex flex-col max-w-[800px]">
-      {accounts.map((account, index) => {
-        const isDebt = account.amount < 0
-        const percentOfTotal = (Math.abs(account.amount) / positiveTotal) * 100
-
-        return (
-          <div
-            key={account.id}
-            className={`flex items-center gap-4 py-4 ${
-              index < accounts.length - 1 ? 'border-b border-[var(--color-neutral-g-100)]' : ''
-            }`}
-          >
-            {/* Bank Icon + Name + Account Number */}
-            <div className="flex items-center gap-3 w-[200px] flex-shrink-0">
-              <div className="flex-shrink-0">
-                {getBankIcon(account.bankType)}
-              </div>
+    <div className="h-full">
+      {/* Cash Section */}
+      <div className="mb-4">
+        <span className="text-[13px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.26px] uppercase mb-2 block">
+          Cash
+        </span>
+        <div className="flex flex-col gap-2">
+          {cashAccounts.map((account) => (
+            <div key={account.id} className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[15px] text-[#1a1a1a] font-['Poppins'] leading-tight">
-                  {account.bankName} - {account.name}
+                <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px]">
+                  {account.name}
                 </span>
-                <span className="text-[13px] text-[#9ca3af] font-['Poppins'] leading-tight">
-                  ***{account.accountNumber}
+                <span className="text-[12px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.24px]">
+                  {account.bankName} ***{account.accountNumber}
                 </span>
               </div>
+              <span className="text-[18px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.36px]">
+                ${account.amount.toLocaleString()}
+              </span>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Progress bar */}
-            <div className="flex-1 h-2 bg-[#e5e7e7] rounded-full overflow-hidden min-w-[100px]">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.max(percentOfTotal, 2)}%`,
-                  backgroundColor: isDebt ? '#ac4545' : '#1e3834'
-                }}
-              />
+      {/* Divider */}
+      <div className="h-px bg-[var(--color-neutral-g-100)] my-4" />
+
+      {/* Debts Section */}
+      <div className="mb-4">
+        <span className="text-[13px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.26px] uppercase mb-2 block">
+          Debts
+        </span>
+        <div className="flex flex-col gap-2">
+          {debtAccounts.map((account) => (
+            <div key={account.id} className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[15px] text-[var(--color-neutral-n-700)] font-['Poppins'] tracking-[-0.3px]">
+                  {account.name}
+                </span>
+                <span className="text-[12px] text-[var(--color-neutral-n-500)] font-['Poppins'] tracking-[-0.24px]">
+                  {account.bankName} ***{account.accountNumber}
+                </span>
+              </div>
+              <span className="text-[18px] font-medium text-[var(--color-loss)] font-['Poppins'] tracking-[-0.36px]">
+                -${Math.abs(account.amount).toLocaleString()}
+              </span>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Amount */}
-            <span className={`text-[15px] font-medium font-['Poppins'] w-28 text-right flex-shrink-0 ${isDebt ? 'text-[#ac4545]' : 'text-[#1a1a1a]'}`}>
-              {isDebt ? `-$${Math.abs(account.amount).toLocaleString()}` : `$${account.amount.toLocaleString()}`}
-            </span>
-          </div>
-        )
-      })}
+      {/* Divider */}
+      <div className="h-px bg-[var(--color-neutral-g-100)] my-4" />
 
-      {/* Total row */}
-      <div className="flex items-center justify-between pt-4 mt-2 border-t border-[var(--color-neutral-g-100)]">
-        <span className="text-[15px] font-medium text-[#1a1a1a] font-['Poppins']">
+      {/* Net Total */}
+      <div className="flex items-center justify-between">
+        <span className="text-[14px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.28px]">
           Net Cash On Hand
         </span>
-        <span className="text-[18px] font-medium text-[#1e3834] font-['Poppins']">
-          ${totalBalance.toLocaleString()}
+        <span className="text-[20px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.4px]">
+          ${netCashOnHand.toLocaleString()}
         </span>
       </div>
     </div>
@@ -1651,9 +1672,9 @@ function CostsBarChart({ viewType, currentIndex, height = 'h-[350px]' }: ChartPr
 }
 
 /**
- * Period Dropdown Component - Shows current period with dropdown to select
+ * Period Dropdown V3 Style - Inline dropdown matching V3's design
  */
-function PeriodDropdown({
+function PeriodDropdownV3({
   currentPeriod,
   viewType,
   onPeriodSelect,
@@ -1664,89 +1685,45 @@ function PeriodDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const getPeriods = (): FinancialPeriod[] => {
-    switch (viewType) {
-      case 'month':
-        return monthlyFinancialData
-      case 'year':
-        return yearlyFinancialData
-      default:
-        return monthlyFinancialData
-    }
-  }
+  const periodLabel = viewType === 'month'
+    ? `${MONTH_NAMES[currentPeriod.month ?? 0]} ${currentPeriod.year}`
+    : `${currentPeriod.year}`
 
-  const periods = getPeriods()
+  // Options ordered most recent first
+  const options = viewType === 'month'
+    ? MONTH_NAMES.slice(0, SIMULATED_MONTH + 1).map((month, idx) => ({
+        label: `${month} ${SIMULATED_YEAR}`,
+        idx,
+        id: monthlyFinancialData[idx]?.id || `month-${idx}`,
+      })).reverse()
+    : [2023, 2024, 2025].map((year, idx) => ({
+        label: `${year}`,
+        idx,
+        id: yearlyFinancialData[idx]?.id || `year-${idx}`,
+      })).reverse()
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 text-[24px] font-medium text-[var(--color-neutral-n-800)] font-['Poppins'] leading-[36px] tracking-[-0.48px] hover:text-[var(--color-neutral-n-600)] transition-colors">
-          {currentPeriod.periodLabel}
-          <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <button className="flex items-center justify-between px-3 py-1 text-[17px] font-normal text-[var(--color-neutral-n-800)] font-['Poppins'] tracking-[-0.34px] hover:opacity-80 transition-opacity whitespace-nowrap w-[185px]">
+          <span>{periodLabel}</span>
+          <AnimatedChevron isOpen={isOpen} size={20} className="flex-shrink-0" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        side="bottom"
-        sideOffset={8}
-        className="w-[200px] p-2 bg-white border border-[var(--color-neutral-g-100)] rounded-xl shadow-lg"
-      >
-        {periods.map((period) => (
+      <DropdownMenuContent align="center" className="max-h-[300px] overflow-auto">
+        {options.map((option) => (
           <DropdownMenuItem
-            key={period.id}
-            className={`
-              px-3 py-2 rounded-lg cursor-pointer transition-colors text-[15px] font-['Poppins']
-              ${period.id === currentPeriod.id
-                ? 'bg-[var(--color-neutral-g-50)] text-[var(--color-primary-p-500)] font-medium'
-                : 'text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)]'
-              }
-            `}
+            key={option.idx}
             onClick={() => {
-              onPeriodSelect?.(period.id)
+              onPeriodSelect?.(option.id)
               setIsOpen(false)
             }}
           >
-            {period.periodLabel}
+            {option.label}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-}
-
-/**
- * View Toggle Component - Month/Year toggle
- */
-function ViewToggle({
-  currentView,
-  onViewChange,
-}: {
-  currentView: 'month' | 'year'
-  onViewChange?: (view: 'month' | 'year') => void
-}) {
-  return (
-    <div className="flex items-center bg-white border border-[var(--color-neutral-g-100)] rounded-full p-1">
-      <button
-        onClick={() => onViewChange?.('month')}
-        className={`px-4 py-1.5 rounded-full text-[14px] font-medium font-['Poppins'] transition-colors ${
-          currentView === 'month'
-            ? 'bg-[var(--color-primary-p-500)] text-white'
-            : 'text-[var(--color-neutral-n-600)] hover:text-[var(--color-neutral-n-800)]'
-        }`}
-      >
-        Month
-      </button>
-      <button
-        onClick={() => onViewChange?.('year')}
-        className={`px-4 py-1.5 rounded-full text-[14px] font-medium font-['Poppins'] transition-colors ${
-          currentView === 'year'
-            ? 'bg-[var(--color-primary-p-500)] text-white'
-            : 'text-[var(--color-neutral-n-600)] hover:text-[var(--color-neutral-n-800)]'
-        }`}
-      >
-        Year
-      </button>
-    </div>
   )
 }
 
@@ -1781,52 +1758,5 @@ function NavigationButton({
     >
       <Icon className={`w-5 h-5 ${disabled ? 'text-[var(--color-neutral-g-400)]' : 'text-[var(--color-neutral-n-700)]'}`} strokeWidth={2} />
     </motion.button>
-  )
-}
-
-/**
- * Action Button Component with SmartTooltip
- */
-function ActionButton({
-  icon: Icon,
-  label,
-  tooltip,
-  variant = 'secondary',
-  onClick,
-}: {
-  icon: typeof FileText
-  label: string
-  tooltip: string
-  variant?: 'primary' | 'secondary'
-  onClick?: () => void
-}) {
-  const { isVisible, triggerRect, triggerRef, showTooltip, hideTooltip } = useTooltipTrigger<HTMLButtonElement>()
-
-  const isPrimary = variant === 'primary'
-
-  return (
-    <>
-      <button
-        ref={triggerRef}
-        onMouseEnter={showTooltip}
-        onMouseLeave={hideTooltip}
-        onClick={onClick}
-        className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${
-          isPrimary
-            ? 'border-[var(--color-primary-p-500)] text-[var(--color-primary-p-500)] hover:bg-[var(--color-primary-p-50)]'
-            : 'border-[var(--color-neutral-g-200)] text-[var(--color-neutral-n-700)] hover:bg-[var(--color-neutral-g-50)]'
-        }`}
-      >
-        <Icon className="w-4 h-4" />
-        <span className="text-[13px] font-medium font-['Poppins']">{label}</span>
-      </button>
-      <AnimatePresence>
-        {isVisible && triggerRect && (
-          <SmartTooltip triggerRect={triggerRect} variant="dark">
-            <span className="text-[13px] text-white font-['Poppins']">{tooltip}</span>
-          </SmartTooltip>
-        )}
-      </AnimatePresence>
-    </>
   )
 }
